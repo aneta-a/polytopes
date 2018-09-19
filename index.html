@@ -1,0 +1,29 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Interactive Polytopes</title>
+    <script type="text/javascript" src="lib85/three.min.js"></script>                  
+    <script type="text/javascript" src="OrbitControls.js"></script>
+              
+    <script type="text/javascript" src="script.js"></script>
+    <script type="text/javascript" src="UIUtils.js"></script>
+    <script type="text/javascript" src="LogicalPolyhedron.js"></script>
+    <script type="text/javascript" src="PolyGroup.js"></script>
+    <script type="text/javascript" src="display.js"></script>
+	
+</head>
+<body onload="init();">
+	<h1>Interactive Polytopes</h1>
+	<p>
+This is an attempt to visualize some polytopes in 4th (and higher) dimention. 
+	</p><p>
+First, here is presented an analogy in usual three-dimentional space. The most-left picture shows a polyhedron (use mouse to orbit, zoom or pan it). The most-right shows it's stereographic projection. In the middle there is its projection to two-dimentional plane: all vertices and edges are present, but z-component of the vertices is ignored. Filled polygon is a section of the polyhedron by a plane, normal to direction of projection. Choose this direction by sliders &phi; and &theta;, or input components of normal vector. <i>h</i> is the distance of the section plane from the center (it's also presented as the length of "normal" vector).
+	</p><p>
+	The secont part shows the same way some regular four-dimentional polytopes. Of cours, there are no analogy of the first picture, but the second and the third shows the same: section of the polytope by three-dimentional hyperplane (yellow polyhedron), projection of the polytope to the three-dimentional space (green wireframe) and its steregraphic projection (blue wireframe on the right). As well as in the first part, you can orbit, zoom and pan three-dimentional objects with the mouse and choose rotation and distance of the section plane by the sliders and text input fields. Simplex, tesseract, hyperoctahedron and C24 are regular 4-dimentional polytopes (C120 and C600 coming soon ;) ). C10 is a section of 5-dimentional hypercube by 4-dimentional hyperplane, normal to main diagonal and containing 10 of the hypercube vertices. It's a semiregular polytope, I don't know, if it has an own name and if C10 is correct, but it contains 10 cells (4 tetrahedra and 6 octahedra). 
+	</p>
+	<p>This simulation is made using Three.js, many thanks to the authors.</p>
+	<p>Please feel free to contact me for feedback and suggestions. <img src="a.png"/></p>
+	<p><i>Sincerely yours, Anna Alekseeva</i></p>
+</body>
+</html>
