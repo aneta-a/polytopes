@@ -1,6 +1,5 @@
 # polytopes
 Interactive visualisation of 4-dimentional polytopes
-INTERACTIVE POLYTOPES
 
 	This is an attempt to visualize some polytopes in 4th (and higher) dimention. 
 
