@@ -154,11 +154,12 @@ var initCanvas4D = function () {
 	ctx4d = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
 	ctx4dstereo = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
 	poly4 = new PolyGroup(ctx4d.scene, cur4Poly.getSection(curDir4d, 0.1));
-	poly4proj = new PolyGroup(ctx4d.scene, cur4Poly.getProjection(curDir4d), {lineMaterialData: {color: 0x339933}}, {faces: false, edges: true});
+	poly4proj = new PolyGroup(ctx4d.scene, cur4Poly.getProjection(curDir4d), {lineMaterialData: {color: 0x339933}}, {faces: false, sticks: true, edges: true, vertices: true});
 	poly4stereo = new PolyGroup(ctx4dstereo.scene, 
 								cur4Poly.getStereoProjection(), 
-								{lineMaterialData: {color: 0x99ccff}}, 
-								{faces: false, edges: true});
+								{lineMaterialData: {color: 0x99ccff},
+								edgeStickMaterialData: {color: 0x6699cc}}, 
+								{faces: false, edges: true, sticks: true, vertices: true});
 }
 
 

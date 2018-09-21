@@ -694,6 +694,18 @@ var Utils = {
 		}
 		return res;
 	},
+	edgeTransformMatrix: function (v1, v2, scale=1) {
+	//return matrix to transform an Object3 with a CylinderGeometry to a stick between the given points
+		var v0 = new THREE.Vector3().addVectors(v1, v2).multiplyScalar(0.5);
+		var dv = new THREE.Vector3().subVectors(v2, v1);
+		
+		var q = new THREE.Quaternion(dv.z, 0, -dv.x, dv.length() + dv.y);
+		q.normalize();
+		var mat = new THREE.Matrix4();
+		mat.compose(v0.multiplyScalar(scale), q, new THREE.Vector3(1, dv.length()*scale, 1));
+		
+		return mat;
+	},
 	goldenRatio: 0.5*(Math.sqrt(5) - 1),
 	dirIdentical3 : {theta: 0, phi: 0}, 
 	dirIdentical4 : {theta: 0, phi: 0, chi: 0} 
@@ -849,11 +861,26 @@ var c10 = new LogicalPolytope(c10Verts, tess5Faces, tess5Cells);
 
 //-----------------tests-----------------------
 
-console.log("!!!!!!!! Start section !!!!!!!!!!!!!");
+var v = new THREE.Vector3(3, -4, -5);
 
-var c24section = cells24.getSection(Utils.dirIdentical4, 0);
+/*
+var v2 = new THREE.Vector3(3, -4, -5);
+var ax = new THREE.Vector3(-v.z, 0, v.x);
+ax.normalize();
+var ang = Math.acos(v.y/v.length());
+var quaternion = new THREE.Quaternion();
+quaternion.setFromAxisAngle( ax, -ang );*/
 
-console.log(c24section);
+var quaternion = new THREE.Quaternion(v.z, 0, -v.x, v.length() + v.y);
+quaternion.normalize();
+
+var yv = new THREE.Vector3(0, -1, 0);
+yv.applyQuaternion(quaternion);
+yv.setLength(v.length());
+console.log(yv);
+
+
+
 
 //console.log(tesseract);
 var testEdges = [];
