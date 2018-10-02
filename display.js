@@ -23,6 +23,7 @@ var dirVectorColor = 0x339933;
 var ctx3d, ctx4d, ctx4dstereo;
 var dirVector;
 var poly3, poly3sec, poly4;
+var pts3d;
 
 
 
@@ -109,11 +110,10 @@ var initStereoCanvas2D = function(size = {w: window.innerWidth*canvasScale2D, h:
 }
 
 //-------------------------------3D------------------------------------------------------------
+
 var createThreeContext = function (parent = document.body, size= {w: window.innerWidth*canvasScale3D, h: window.innerWidth*canvasScale3D}) {
 	var renderer = new THREE.WebGLRenderer( {antialias:true, alpha:true} );
   	renderer.setClearColor(rendererBkgColor);
-	//var width = window.innerWidth;
-	//var height = window.innerHeight;
 	renderer.setSize (size.w, size.h);
 	parent.appendChild (renderer.domElement);
 
@@ -125,7 +125,15 @@ var createThreeContext = function (parent = document.body, size= {w: window.inne
 	camera.lookAt (new THREE.Vector3(0,0,0));
 
   	var controls = new THREE.OrbitControls (camera, renderer.domElement);
+  	controls.enableKeys = false;
 	initLights(scene);
+	
+	controls.enableZoom = false;
+	
+	renderer.domElement.addEventListener("click", function (ev) {controls.enableZoom = true});
+	renderer.domElement.addEventListener("mouseout", function (ev) {controls.enableZoom = false});
+	
+	
  	
   	return {renderer: renderer, scene: scene, camera: camera, controls: controls};
 
@@ -145,9 +153,36 @@ var initCanvas3D = function () {
 							{lineMaterialData: {color: 0x3333ff}}, 
 							{faces: false, edges: true});
 	initDirVector();
+	pts3d = new InteractivePoints(ctx3d);
+	InteractivePoints.setClickManager(ctx3d, pts3d, [poly3]);
+	ctx3d.renderer.domElement.addEventListener("pointschange", onPointsChange3d);
 	return createCanvasBlock(ctx3d, "Polyhedron");
 
 }
+
+var onPointsChange3d = function (ev) {
+	var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+	console.log("on points change 3d", ev.detail, planeObj.error);
+	if (!planeObj.error) {
+		setSlidersValue(planeObj.dir, sliderPhi, sliderTheta)
+		sliderH.value = planeObj.h;
+		sliderH.updateValueOutput();
+		updateDirection();
+
+	}
+}
+var onPointsChange4d = function (ev) {
+	var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+	if (!planeObj.error) {
+		setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
+		sliderH4d.value = planeObj.h;
+		sliderH4d.updateValueOutput();
+		updateDirection4d();
+
+	}
+}
+
+
 
 var initCanvas4D = function () {
 
@@ -160,6 +195,11 @@ var initCanvas4D = function () {
 								{lineMaterialData: {color: 0x99ccff},
 								edgeStickMaterialData: {color: 0x6699cc}}, 
 								{faces: false, edges: true, sticks: true, vertices: true});
+
+	pts4d = new InteractivePoints(ctx4d, 4);
+	InteractivePoints.setClickManager(ctx4d, pts4d, [poly4proj]);
+	ctx4d.renderer.domElement.addEventListener("pointschange", onPointsChange4d);
+
 }
 
 

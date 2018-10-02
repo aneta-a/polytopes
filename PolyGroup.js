@@ -6,6 +6,7 @@
 var PolyGroup = function(scene, poly, styleParameters, type) {
 	this.group = new THREE.Group();
 	this.setStyle(styleParameters);
+	this.scale = this.style.numbers.scale3D/2;
 	
 	this.type = {};
 	for (var f in PolyGroup.defaultType) {
@@ -24,6 +25,7 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 		var bGeo = new THREE.BufferGeometry;
 		this.bufferPolyhedron.geometry = bGeo;
 		this.bufferPolyhedron.material = new THREE.MeshLambertMaterial (this.style.meshMaterialData);
+		this.bufferPolyhedron.livePoly = true;
 		this.group.add(this.bufferPolyhedron);
 	}
 	if (this.type.sticks) {
@@ -61,8 +63,58 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 			this.group.add( this.verts[i] );	
 		}
 
-	}
+	};
 	
+	this.getIntersect = function(raycaster, hp) {
+		var intersects = raycaster.intersectObject(this.group, true);
+		var i = 0; 
+		var found = false;
+		var o, p, d, f;
+		while (i < intersects.length && !found) {
+			o = intersects[i].object;
+			if (o.livePoly  || o.polyEdgeIndex >= 0 || o.polyVertIndex >= 0) {
+				found = true;
+				p = intersects[i].point;
+				d = intersects[i].distance;
+				if (o.livePoly)
+					f = intersects[i].faceIndex;
+			}
+			i++;
+		}
+		if (o && o.livePoly) {
+			var face = this.geoFaceIndices[f/3];
+			var plog = this.logicalPoly.projectToFace(p.clone().multiplyScalar(1/this.scale), face);
+			
+			return {logicalPoint: plog, 
+					displayPoint: plog.clone().multiplyScalar(this.scale), 
+					type: "face", 
+					distance: d, 
+					index: face};
+		} else if (o && o.polyEdgeIndex >= 0) {
+			
+			var plog;
+			if (hp && hp.dim == 4) {
+				plog = this.displayToLogical(p, hp, "edge", o.polyEdgeIndex);
+
+			} else plog = this.logicalPoly.projectToEdge(p.clone().multiplyScalar(1/this.scale), o.polyEdgeIndex);
+			return {logicalPoint: plog, 
+					displayPoint: (hp && hp.dim == 4) ? this.logicalToDisplay(plog, hp) : plog.clone().multiplyScalar(this.scale), 
+					type: "edge", 
+					distance: d, 
+					index: o.polyEdgeIndex};
+
+		} else if (o && o.polyVertIndex >= 0) {
+			var plog = this.logicalPoly.vertices[o.polyVertIndex];
+			return {logicalPoint: plog, 
+					displayPoint: plog.clone().multiplyScalar(this.scale), 
+					type: "vertex", 
+					distance: d, 
+					index: o.polyVertIndex};
+
+		}
+		return null; //{logicalPoint: new THREE.Vector3(1, 2, 3), displayPoint: new THREE.Vector3(4, 5, 6)}
+	}
+
 	scene.add(this.group);
 	
 	if (poly) this.update(poly);
@@ -81,9 +133,11 @@ PolyGroup.style.edgeStickMaterialData = {color: 0x66cc66};
 PolyGroup.prototype = {
 	constructor: PolyGroup,
 	update: function (logicalPolyhedron) {
+		this.logicalPoly = logicalPolyhedron;
 		function updateWireFrame(lines, curPoly, sc) {
 			var newGeoms = curPoly.getEdgeGeometries(sc, false);
 			for (var i = 0; i < newGeoms.length; i++) {
+				lines[i].polyEdgeIndex = i;
 				lines[i].geometry = newGeoms[i];
 				lines[i].visible = true;
 				lines[i].geometry.needsUpdate = true;
@@ -99,6 +153,7 @@ PolyGroup.prototype = {
 			var visibleSticks = Math.min(curPoly.edges.length, lines.length);
 			for (var i = 0; i < visibleSticks; i++) {
 				lines[i].visible = true;
+				lines[i].polyEdgeIndex = i;
 				var m = Utils.edgeTransformMatrix (curPoly.vertices[curPoly.edges[i][0]], curPoly.vertices[curPoly.edges[i][1]], sc);
 				lines[i].matrix.copy(m);
 				lines[i].matrixAutoUpdate = false;
@@ -115,6 +170,7 @@ PolyGroup.prototype = {
 			var visibleVerts = Math.min(curPoly.vertices.length, balls.length);
 			for (var i = 0; i < visibleVerts; i++) {
 				var pos = curPoly.vertices[i].clone().multiplyScalar(sc);
+				balls[i].polyVertIndex = i;
 				balls[i].visible = true;
 				balls[i].position.set(pos.x, pos.y, pos.z);
 			}
@@ -128,10 +184,13 @@ PolyGroup.prototype = {
 			mesh.geometry = bGeo;
 			mesh.geometry.needsUpdate = true;
 		}
-		if (this.type.faces) updateBufferPoly(this.bufferPolyhedron, logicalPolyhedron, this.style.numbers.scale3D/2);
-		if (this.type.sticks) { updateSticks(this.sticks, logicalPolyhedron, this.style.numbers.scale3D/2) }
-		else if (this.type.edges) { updateWireFrame(this.lines, logicalPolyhedron, this.style.numbers.scale3D/2); }
-		if (this.type.vertices) updateVertBalls(this.verts, logicalPolyhedron, this.style.numbers.scale3D/2); 
+		if (this.type.faces) {
+			updateBufferPoly(this.bufferPolyhedron, logicalPolyhedron, this.scale);
+			this.geoFaceIndices = logicalPolyhedron.geomFaces.slice();
+		}
+		if (this.type.sticks) { updateSticks(this.sticks, logicalPolyhedron, this.scale) }
+		else if (this.type.edges) { updateWireFrame(this.lines, logicalPolyhedron, this.scale); }
+		if (this.type.vertices) updateVertBalls(this.verts, logicalPolyhedron, this.scale); 
 	},
 	setStyle: function (style) {
 		this.style = {};
@@ -149,8 +208,41 @@ PolyGroup.prototype = {
 				}
 			}
 		return this.style;
+	},
+	displayToLogical: function (disp, hp, type, index) {
+		var p = disp.clone().multiplyScalar(1/this.scale);
+		if (hp && hp.isHyperPlane && hp.dim == 4) {
+			if (type.charAt(0) == "v") {
+				return this.logicalPoly.vertices[index].clone();
+			} else if (type.charAt(0) == "e") {
+				var v1 = cur4Poly.vertices[this.logicalPoly.edges[index][0]].clone();
+				var v2 = cur4Poly.vertices[this.logicalPoly.edges[index][1]].clone();
+				var v1_ = hp.projectFlat(v1);
+				var v2_ = hp.projectFlat(v2);
+				var dv_ = new THREE.Vector3().subVectors(v2_, v1_);
+				var alpha = v2_.sub(p).dot(dv_)/dv_.lengthSq();
+				return new THREE.Vector4().lerpVectors(v2, v1, alpha);
+				
+			} else {
+				return new hp.unproject(p);
+			}
+			
+		}
+		return p;
+	}, 
+	logicalToDisplay: function (logp, hp) {
+		if (logp.isVector4 && hp && hp.dim == 4) {
+			var p = hp.project(logp);
+			p.applyMatrix4(hp.matrix);
+			var p3 = new THREE.Vector3(p.x, p.y, p.z);
+			return p3.multiplyScalar(this.scale);
+		
+		} else {
+			return logp.clone().multiplyScalar(this.scale);
+		}
 	}
 	
 }
+
 console.log("PolyGroup loaded");
 

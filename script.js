@@ -13,7 +13,7 @@ var normalInputOutput, normalInputOutput4d;
 
 var curPoly, curSection, curProjection;
 var cur4Poly, cur4Section, cur4Projection;
-var curDir4d;
+var curDir4d, curSectionHP4d;
 var solids = {}, solids4d = {};
 
 function init()
@@ -38,6 +38,7 @@ function init()
 	cur4Poly = simplex;
 	curDir4d = Utils.dirIdentical4; 
 	cur4Projection = simplex.getProjection(curDir4d);
+	curSectionHP4d = new HyperPlane(curDir4d, 0);
 	
 	document.body.appendChild(document.createElement("h2")).innerHTML = "Regular polyhedra"
 	
@@ -71,20 +72,32 @@ function init()
 	initControls4D();
 	
 	updateDirection();
-
-	
   	animate();
+	//------------tests---------------------
+		var aaalpha = 0.5;
+		var tttpts = [];
+		for (var i = 0; i < 4; i++) {
+			tttpts.push(new THREE.Vector4().lerpVectors(simplex.vertices[i], simplex.vertices[4], aaalpha));
+		}
+		console.log("points", tttpts);
+		var nnnorm = HyperPlane.linSolve(Utils.vectorsToMatrix(tttpts), new THREE.Vector4(1, 1, 1, 1));
+		nnnorm.normalize();
+		nnnorm.multiplyScalar(nnnorm.dot(tttpts[0]));
+		console.log("sol", nnnorm);
+	//--------------------------------------
+
 
 }
 
 function onSolidChange (ev) {
 	var curPolyName = getRBSelectedValue("solid");
-	console.log(curPolyName);
 	if (solids.hasOwnProperty(curPolyName)) {
 		curPoly = solids[curPolyName];
-		console.log("inside", curPoly);
 		updatePolyhedron();
 		updateDirection();
+		console.log(sliderTheta.value);
+		pts3d.clear();
+		console.log("after points clear", sliderTheta.value);
 	}
 }
 function onSolid4dChange (ev) {
@@ -92,7 +105,9 @@ function onSolid4dChange (ev) {
 	if (solids4d.hasOwnProperty(curPolyName)) {
 		cur4Poly = solids4d[curPolyName];
 		updatePolytope();
+		pts4d.clear();
 	}
+
 }
 
 function initControls() {
@@ -138,6 +153,7 @@ function updateDirection(ev) {
 		theta: sliderTheta.value*Math.PI,
 		phi: sliderPhi.value*Math.PI
 	}
+	console.log("updateDirection", newDir, sliderTheta.value);
 	curProjection = curPoly.getProjection(newDir);
 	poly3sec.update(curPoly.getSection3D(newDir, sliderH.value));
 	v = Utils.dirToVector(newDir)
@@ -159,15 +175,18 @@ function updateDirection4d(ev) {
 		theta: sliderTheta4d.value*Math.PI,
 		phi: sliderPhi4d.value*Math.PI,
 		chi: sliderChi4d.value*Math.PI
-	}
-	console.log("updateDirection4d", curDir4d);
+	}	
+	curSectionHP4d = new HyperPlane(curDir4d, sliderH4d.value);
+	
+	console.log("updateDirection4d", curSectionHP4d);
 	cur4Projection = cur4Poly.getProjection(curDir4d);
-	v = Utils.dirToVector(curDir4d)
-	v.setLength(sliderH4d.value);
+	v = curSectionHP4d.orthoCenter.clone();
 	normalInputOutput4d.inputx.value = v.x.toFixed(3);
 	normalInputOutput4d.inputy.value = v.y.toFixed(3);
 	normalInputOutput4d.inputz.value = v.z.toFixed(3);
 	normalInputOutput4d.inputw.value = v.w.toFixed(3);
+
+	ctx4d.renderer.domElement.dispatchEvent(new CustomEvent("hpchange", {detail: curSectionHP4d}));
 	updatePolytope();
 }
 
@@ -252,6 +271,7 @@ function animate()
 	//controls.update();
 	//renderer.render (scene, camera);
 }
+
 
 console.log("script loaded");
 

@@ -6,6 +6,7 @@
 //vertices - array of THREE.Vector3
 //faces - array of arrays of integer, inidices in 'vertices'
 var LogicalPolyhedron = function(vertices, faces) {
+	this.dim = 3;
 	this.vertices = vertices;
 
 	this.getFaceCenter = function (face) {
@@ -168,11 +169,13 @@ LogicalPolyhedron.prototype = {
 		}
 		var faceBuffer = new Array(faceCount*3);
 		var fbInd = 0;
+		this.geomFaces = [];
 		for (var i = 0; i < this.faces.length; i++) {
 			for (var j = 2; j < this.faces[i].length; j++) {
 				faceBuffer[fbInd++] = this.faces[i][j];
 				faceBuffer[fbInd++] = this.faces[i][j-1];
 				faceBuffer[fbInd++] = this.faces[i][0];
+				this.geomFaces.push(i);
 			}
 		} 
 
@@ -217,6 +220,10 @@ LogicalPolyhedron.prototype = {
 		
 
 	},
+	geomFaceIndexToFace: function (index, indexed = false){
+		if (!this.geomFaces) this.getGeometry();
+		return this.geomFaces[index];
+	},
 	getEdgeGeometries: function(r = 1, normalized = true) {
 		var res = [];
 		var newR;
@@ -238,7 +245,7 @@ LogicalPolyhedron.prototype = {
 		}
 		return res;
 	},
-	getSectionObject: function() {
+	getSectionObject: function(hp, testSets) {
 		//returns the object with following fields:
 		//values - array of all vertices of the section
 		//edges - array of the vertices of the section, coming from edges of initial polyhedron
@@ -246,19 +253,9 @@ LogicalPolyhedron.prototype = {
 		//verts - array of the vertices of the polyhedron, lying exactly on the section
 		//       value: - vertex (Vector3 or Vector4), index: index of the vertex in this.vertices
 		var vector, dir, h;
-		if (arguments[0].isVector3 || arguments[0].isVector4) {
-			vector = arguments[0].clone();
-			dir = Utils.vectorToDir(vector);
-			if (arguments.length > 1) {
-				h = arguments[1];
-				vector.setLength(h);
-			}
-			else h = vector.length();
-		} else {
-			dir = arguments[0];
-			h = arguments[1];
-			vector = Utils.dirToVector(dir).setLength(h);
-		}
+		h = hp.h;
+		dir = hp.dir;
+		vector = hp.orthoCenter;
 		var mat = Utils.dirToMatrix(dir);
 		var newVerts = [];
 		for (var i = 0; i < this.vertices.length; i++) {
@@ -272,7 +269,7 @@ LogicalPolyhedron.prototype = {
 		var zeroVertices = [];
 		var dim = mat.isMatrix4 ? 3 : 2;
 		for (var j = 0; j < newVerts.length; j++) {
-			if (Math.abs(newVerts[j].getComponent(dim))<1e-10) {
+			if (Math.abs(newVerts[j].getComponent(dim))<1e-3) {
 				zeroVertices.push(j);
 				res.verts.push({index: j, value: newVerts[j]});
 				res.values.push(newVerts[j]);
@@ -294,7 +291,8 @@ LogicalPolyhedron.prototype = {
 		return res;
 	},
 	getSection2D: function (){
-		var sectionObject = LogicalPolyhedron.prototype.getSectionObject.apply(this,arguments);
+		var hp = new HyperPlane(...arguments);
+		var sectionObject = this.getSectionObject(hp, this.faces);//.apply(this,arguments);
 		var sectionVertices = sectionObject.values;
 		sectionVertices.sort(function (a, b) { return Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x) });
 		return new LogicalPolygon(sectionVertices);
@@ -303,27 +301,35 @@ LogicalPolyhedron.prototype = {
 	getSection3D: function (){
 		sectionPolygon = LogicalPolyhedron.prototype.getSection2D.apply(this,arguments);
 		var flatVertices = sectionPolygon.vertices.slice();
-		var vector, dir, h;
-		if (arguments[0].isVector3) {
-			vector = arguments[0].clone();
-			dir = Utils.vectorToDir(vector);
-			if (arguments.length > 1) {
+		if (flatVertices.length > 0) {
+			var vector, dir, h;
+			if (arguments[0].isHyperPlane) {
+				var hp = arguments[0];
+				h = hp.h;
+				dir = hp.dir;
+				vector = hp.orthoCenter;
+			} else if (arguments[0].isVector3) {
+				vector = arguments[0].clone();
+				dir = Utils.vectorToDir(vector);
+				if (arguments.length > 1) {
+					h = arguments[1];
+					vector.setLength(h);
+				}
+				else h = vector.length();
+			} else {
+				dir = arguments[0];
 				h = arguments[1];
-				vector.setLength(h);
+				vector = Utils.dirToVector(dir).setLength(h);
 			}
-			else h = vector.length();
-		} else {
-			dir = arguments[0];
-			h = arguments[1];
-			vector = Utils.dirToVector(dir).setLength(h);
-		}
-		var mat = Utils.dirToMatrix(dir);
-		var invMat = new THREE.Matrix3().getInverse(mat);
-		var newVerts = [];
-		for (var i = 0; i < flatVertices.length; i++) {
-			newVerts.push(new THREE.Vector3(flatVertices[i].x, flatVertices[i].y, 0).applyMatrix3(invMat).add(vector));
-		}
-		return new LogicalPolyhedron(newVerts, [Utils.intArray(newVerts.length)]);
+			var mat = Utils.dirToMatrix(dir);
+			var invMat = new THREE.Matrix3().getInverse(mat);
+			var newVerts = [];
+			for (var i = 0; i < flatVertices.length; i++) {
+				newVerts.push(new THREE.Vector3(flatVertices[i].x, flatVertices[i].y, 0).applyMatrix3(invMat).add(vector));
+			}
+			return new LogicalPolyhedron(newVerts, [Utils.intArray(newVerts.length)]);
+		} else return new LogicalPolyhedron([], []);
+		
 	},
 	getProjection: function (direction){
 		//direction: {theta: angle around y, phi: angel around new z}
@@ -381,6 +387,22 @@ LogicalPolyhedron.prototype = {
 		}
 		return new LogicalPolyhedron(newVertices, newFaces);
 		
+	},
+	
+	projectToEdge: function (p, index) {
+		return Utils.projectToVector(p, this.vertices[this.edges[index][0]], this.vertices[this.edges[index][1]]);
+	},
+	getFaceHP: function (index) {
+		var vertsArr = [];
+		for (var i = 0; i < this.faces[index].length; i++) {
+			vertsArr.push(this.vertices[this.faces[index][i]]);
+		}
+		return new HyperPlane(vertsArr);
+	}, 
+	
+	projectToFace: function (p, index) {
+		var hp = this.getFaceHP(index);
+		return hp.project(p);
 	}
 
 }
@@ -420,6 +442,7 @@ LogicalPolyhedron.getCenter = function () {
 var LogicalPolygon = function (vertices, edges) {
 	this.vertices = vertices;
 	this.edges = edges;
+	this.dim = 2;
 
 }
 LogicalPolygon.prototype = {
@@ -431,6 +454,7 @@ LogicalPolygon.prototype = {
 //cells - array of indices in 'vertices'
 var LogicalPolytope = function (vertices, faces, cells) {
 	LogicalPolyhedron.call(this, vertices, faces);
+	this.dim = 4;
 	this.cellsVertices = cells;
 	this.cellsFaces = [];
 	for (var j = 0; j < this.cellsVertices.length; j++) {
@@ -535,7 +559,8 @@ lppp.getSection = function () {
 	//returns the section of the given polytope by 3d-space normal to given direction, intersection it in a given distance from the center
 	//Direction is given as a normal vector or angles (the first argument). The second argument is a distance. 
 	//If distance is not given and the first argument is vector, its length is used instead.
-	var sectionObject = LogicalPolyhedron.prototype.getSectionObject.apply(this,arguments);
+	var hp = new HyperPlane(...arguments);
+	var sectionObject = this.getSectionObject(hp, this.cells);//.apply(this,arguments);
 	var sectionVertices = sectionObject.values;
 	var sectionFaces = new Array(this.cellsVertices.length);
 	for (var i = 0; i < sectionObject.verts.length; i++) {
@@ -601,7 +626,7 @@ lppp.getStereoProjection = function (direction){
 }; 
 
  
-
+//console.log(HyperPlane);
 
 var Utils = {
 	dirToVector: function (dir) {
@@ -705,6 +730,47 @@ var Utils = {
 		mat.compose(v0.multiplyScalar(scale), q, new THREE.Vector3(1, dv.length()*scale, 1));
 		
 		return mat;
+	},
+	vectorsToMatrix: function (vectors, mat) {
+		var dim = vectors[0].isVector4 ? 4 : 3;
+		if (vectors.length < dim) {
+			console.warn("vectorsToMatrix: Insuffisient vectors number" + vectros.length + ", need " + dim);
+		}
+		var arr = [];
+		for (var i = 0; i < dim; i++) {
+			for (var j = 0; j < dim; j++) {
+				arr.push(vectors[j].getComponent(i));
+			}
+		}
+		if (!mat) mat = dim == 4 ? new THREE.Matrix4() : new THREE.Matrix3();
+		mat.fromArray(arr);
+		return mat;
+	}, 
+	tripleProduct: function (v1, v2, v3) {
+		var m = new THREE.Matrix3();
+		if (Array.isArray(v1)) m = Utils.vectorsToMatrix(v1, m);
+		else m = Utils.vectorsToMatrix([v1, v2, v3]);
+		return m.determinant();
+	},
+	projectToPlane: function (p, planePoints) {
+		var hp = new HyperPlane(planePoints);
+		return hp.project(p);
+	},
+	projectToVector: function (p, v1, v2) {
+	
+		var dp = p.isVector4 ? new THREE.Vector4() : new THREE.Vector3();
+		var dv = p.isVector4 ? new THREE.Vector4() : new THREE.Vector3();
+		dp.subVectors(p, v1);
+		dv.subVectors(v2, v1);
+		return v1.clone().add(dv.multiplyScalar(dp.dot(dv)/dv.lengthSq()));
+		
+		
+	},
+	isDir: function (object) {
+		if (object.hasOwnProperty("theta") && object.hasOwnProperty("phi")) {
+			return object.hasOwnProperty("chi") ? 4 : 3;
+		} 
+		return false;
 	},
 	goldenRatio: 0.5*(Math.sqrt(5) - 1),
 	dirIdentical3 : {theta: 0, phi: 0}, 
@@ -830,6 +896,8 @@ var c10Verts = [
 	new THREE.Vector4(-s_2,     s_6,    -s_3,      s_5),//0 1 0 1 0 //10
 	new THREE.Vector4(   0, -s2*s_3,    -s_3,      s_5) //0 0 1 1 0 //12
 ];
+for (var i = 0; i < c10Verts.length; i++) 
+	c10Verts[i].multiplyScalar(Math.sqrt(5));
 var c10Indices = [17, 18, 20, 24, 3, 5, 9, 6, 10, 12];
 
 var tess5Cells = [];
@@ -861,7 +929,12 @@ var c10 = new LogicalPolytope(c10Verts, tess5Faces, tess5Cells);
 
 //-----------------tests-----------------------
 
-var v = new THREE.Vector3(3, -4, -5);
+var v1 = new THREE.Vector3(1, 0, 0);
+var v2 = new THREE.Vector3(0, 1, 0);
+var v3 = new THREE.Vector3(0, 0, 1);
+
+
+console.log("projectToPlane", Utils.projectToPlane(new THREE.Vector3(1, 1, 1), [v1, v2, v3]));
 
 /*
 var v2 = new THREE.Vector3(3, -4, -5);
@@ -869,7 +942,7 @@ var ax = new THREE.Vector3(-v.z, 0, v.x);
 ax.normalize();
 var ang = Math.acos(v.y/v.length());
 var quaternion = new THREE.Quaternion();
-quaternion.setFromAxisAngle( ax, -ang );*/
+quaternion.setFromAxisAngle( ax, -ang );
 
 var quaternion = new THREE.Quaternion(v.z, 0, -v.x, v.length() + v.y);
 quaternion.normalize();
@@ -877,7 +950,7 @@ quaternion.normalize();
 var yv = new THREE.Vector3(0, -1, 0);
 yv.applyQuaternion(quaternion);
 yv.setLength(v.length());
-console.log(yv);
+console.log(yv);*/
 
 
 

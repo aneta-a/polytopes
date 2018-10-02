@@ -18,6 +18,15 @@ function parseQueryString(){
 	return res;
 }
 
+function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      }
+
+
 
 function createRadioGroup (object, name, defaultValueName = null, eventListener=null, parent = document.body, layout="horizontal") {
 	var dom = document.createElement("div");
@@ -65,7 +74,7 @@ function setSlider (name, mn, mx, mnStr, mxStr, startVal, postfix="", parent = d
 	res.setAttribute("type", "range");
 	res.setAttribute("min", mn);
 	res.setAttribute("max", mx);
-	res.setAttribute("step", (mx-mn)/200);
+	res.setAttribute("step", (mx-mn)/2000);
 	res.setAttribute("value", startVal);
 	var tr = document.createElement("tr");
 	tr.setAttribute("valign", "bottom");
@@ -105,6 +114,19 @@ function getRBSelectedValue (name) {
 		}
 	}
 	return val;
+}
+
+function copyObject(source, res) {
+	if (!res) res = {};
+	for (var f in source) {
+		if (source.hasOwnProperty(f)) {
+			if (source[f] instanceof Object) {
+				if (!res.hasOwnProperty(f)) res[f]={};
+				copyObject(source[f], res[f]);}
+			else res[f] = source[f];
+		}
+	}
+	return res;
 }
 
 console.log("UIUtils loaded");

@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>JS tests</title>
+        <!--script type="text/javascript" src="lib85/three.min.js"></script>                  
+        <script type="text/javascript" src="OrbitControls.js"></script-->
+        <script type="text/javascript" src="UIUtils.js"></script>
+        <script type="text/javascript">
+	var init = function() {
+		var o1 = {a: 1, b: {c:2, d: 3}, e: [4, 5, 6]};
+		var o2 = copyObject(o1);
+		var o3 = {b: {d:7, f:8}};
+		copyObject(o3, o2);
+		
+		console.log(o2);
+		createSomething("a", 1);
+	}
+	var Something = function () {
+		console.log("Creating something", arguments[0], arguments[1]);
+	}
+	Something.prototype = {constructor: Something}
+	var createSomething = function () {
+		return new Something(...arguments);
+	}
+	</script>
+	
+</head>
+<body onload="init();">
+
+<p></p>
+</body>
+</html>
