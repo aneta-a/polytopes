@@ -927,32 +927,6 @@ while (ii < tess5Faces.length) {
 var c10 = new LogicalPolytope(c10Verts, tess5Faces, tess5Cells);
 
 
-//-----------------tests-----------------------
-
-var v1 = new THREE.Vector3(1, 0, 0);
-var v2 = new THREE.Vector3(0, 1, 0);
-var v3 = new THREE.Vector3(0, 0, 1);
-
-
-console.log("projectToPlane", Utils.projectToPlane(new THREE.Vector3(1, 1, 1), [v1, v2, v3]));
-
-/*
-var v2 = new THREE.Vector3(3, -4, -5);
-var ax = new THREE.Vector3(-v.z, 0, v.x);
-ax.normalize();
-var ang = Math.acos(v.y/v.length());
-var quaternion = new THREE.Quaternion();
-quaternion.setFromAxisAngle( ax, -ang );
-
-var quaternion = new THREE.Quaternion(v.z, 0, -v.x, v.length() + v.y);
-quaternion.normalize();
-
-var yv = new THREE.Vector3(0, -1, 0);
-yv.applyQuaternion(quaternion);
-yv.setLength(v.length());
-console.log(yv);*/
-
-
 
 
 //console.log(tesseract);

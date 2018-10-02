@@ -73,20 +73,6 @@ function init()
 	
 	updateDirection();
   	animate();
-	//------------tests---------------------
-		var aaalpha = 0.5;
-		var tttpts = [];
-		for (var i = 0; i < 4; i++) {
-			tttpts.push(new THREE.Vector4().lerpVectors(simplex.vertices[i], simplex.vertices[4], aaalpha));
-		}
-		console.log("points", tttpts);
-		var nnnorm = HyperPlane.linSolve(Utils.vectorsToMatrix(tttpts), new THREE.Vector4(1, 1, 1, 1));
-		nnnorm.normalize();
-		nnnorm.multiplyScalar(nnnorm.dot(tttpts[0]));
-		console.log("sol", nnnorm);
-	//--------------------------------------
-
-
 }
 
 function onSolidChange (ev) {
@@ -95,9 +81,7 @@ function onSolidChange (ev) {
 		curPoly = solids[curPolyName];
 		updatePolyhedron();
 		updateDirection();
-		console.log(sliderTheta.value);
 		pts3d.clear();
-		console.log("after points clear", sliderTheta.value);
 	}
 }
 function onSolid4dChange (ev) {
@@ -153,7 +137,6 @@ function updateDirection(ev) {
 		theta: sliderTheta.value*Math.PI,
 		phi: sliderPhi.value*Math.PI
 	}
-	console.log("updateDirection", newDir, sliderTheta.value);
 	curProjection = curPoly.getProjection(newDir);
 	poly3sec.update(curPoly.getSection3D(newDir, sliderH.value));
 	v = Utils.dirToVector(newDir)
@@ -178,7 +161,6 @@ function updateDirection4d(ev) {
 	}	
 	curSectionHP4d = new HyperPlane(curDir4d, sliderH4d.value);
 	
-	console.log("updateDirection4d", curSectionHP4d);
 	cur4Projection = cur4Poly.getProjection(curDir4d);
 	v = curSectionHP4d.orthoCenter.clone();
 	normalInputOutput4d.inputx.value = v.x.toFixed(3);

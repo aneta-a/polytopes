@@ -174,7 +174,6 @@ HyperPlane.linSolve = function (mat, vect) {
 			arr[j + i*dim] = vect.getComponent(j);		
 		}
 		newMat.fromArray(arr);
-		console.log(i, newMat);
 		res.setComponent(i, newMat.determinant()/d);
 	}
 	return res;
