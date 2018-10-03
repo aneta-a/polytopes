@@ -4,26 +4,41 @@
 
 var canvas2D, context2D;
 var stereoCanvas2D, steroContext2D;
-var canvasScale2D = 0.32;
-
-var bkgColor2D = "#eeeeee";
-var projLineColor = "#996666";
-var projLineWidth = 2;
-var secLineColor = "#666699";
-var secLineWidth = 2;
-var secFillStyle = "rgba(200, 60, 60, 0.3)";
-var maxRadius = 2;
-
-
-var canvasScale3D = 0.32;
-var canvasScale4D = 0.48;
-var rendererBkgColor = 0x666666;
-var dirVectorColor = 0x339933;
-
 var ctx3d, ctx4d, ctx4dstereo;
 var dirVector;
 var poly3, poly3sec, poly4;
 var pts3d;
+
+var canvasScale2D = 0.32;
+var canvasScale3D = 0.32;
+var canvasScale4D = 0.48;
+
+
+//-------------2d-------------------
+var bkgColor2D = "#eeeeee";
+var projLineColor = "#5F915F";
+var projLineWidth = 3;
+var secLineColor = "#993333";
+var secLineWidth = 2;
+var secFillStyle = "rgba(249, 169, 83, 0.5)";
+var stereoLineColor = "#6699cc";
+var stereoLineWidth = 3;
+var maxRadius = 2;
+
+//-----------------3d--------------------
+var rendererBkgColor = 0x666666;
+var dirVectorColor = 0x333399;
+var faceColor = 0x8D89E1;
+var edgeColor = 0x5F915F;
+var secLineColor3d = 0x993333;
+
+//----------------4d-----------------
+var stereoColor4d = 0x6699cc; 
+var projColor4d = 0x66cc66;
+var sectionFaceColor4d = 0xc8761e;
+var sectionEdgeColor4d = 0x993333;
+
+
 
 
 
@@ -147,10 +162,10 @@ var updateThreeContext = function (ctxObj) {
 var initCanvas3D = function () {
 	
 	ctx3d = createThreeContext();
-	poly3 = new PolyGroup(ctx3d.scene, curPoly);
+	poly3 = new PolyGroup(ctx3d.scene, curPoly, {meshMaterialData: {color: faceColor}, lineMaterialData: {color: edgeColor}, sticksMaterialData: {color: projColor4d}}, {faces: true, sticks: false, vertices: false});
 	poly3sec = new PolyGroup(ctx3d.scene, 
 							curPoly.getSection3D(Utils.dirIdentical3, 0), 
-							{lineMaterialData: {color: 0x3333ff}}, 
+							{lineMaterialData: {color: secLineColor3d}}, 
 							{faces: false, edges: true});
 	initDirVector();
 	pts3d = new InteractivePoints(ctx3d);
@@ -185,14 +200,28 @@ var onPointsChange4d = function (ev) {
 
 var initCanvas4D = function () {
 
+/*
+var stereoColor4d = 0x6699cc; 
+var projColor4d = 0x66cc66;
+var sectionFaceColor4d = 0xc8761e;
+var sectionEdgeColor4d = 0x993333;
+var rendererBkgColor4d = 0x666666;
+var rendererBkgColorStereo4d = 0x666666;
+
+*/
 	ctx4d = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
 	ctx4dstereo = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
-	poly4 = new PolyGroup(ctx4d.scene, cur4Poly.getSection(curDir4d, 0.1));
-	poly4proj = new PolyGroup(ctx4d.scene, cur4Poly.getProjection(curDir4d), {lineMaterialData: {color: 0x339933}}, {faces: false, sticks: true, edges: true, vertices: true});
+	
+	poly4 =       new PolyGroup(ctx4d.scene, 
+					  		    cur4Poly.getSection(curDir4d, 0.1), 
+							    {meshMaterialData: {color: sectionFaceColor4d}, lineMaterialData: {color: sectionEdgeColor4d}});
+	poly4proj =   new PolyGroup(ctx4d.scene, 
+	                            cur4Poly.getProjection(curDir4d), 
+			                    {lineMaterialData: {color: projColor4d}, edgeStickMaterialData: {color: projColor4d}}, 
+			                    {faces: false, sticks: true, edges: true, vertices: true});
 	poly4stereo = new PolyGroup(ctx4dstereo.scene, 
 								cur4Poly.getStereoProjection(), 
-								{lineMaterialData: {color: 0x99ccff},
-								edgeStickMaterialData: {color: 0x6699cc}}, 
+								{lineMaterialData: {color: stereoColor4d}, edgeStickMaterialData: {color: stereoColor4d}}, 
 								{faces: false, edges: true, sticks: true, vertices: true});
 
 	pts4d = new InteractivePoints(ctx4d, 4);
