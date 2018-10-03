@@ -148,7 +148,7 @@ function updateDirection(ev) {
 	drawPolygon(context2D, curProjection);
 	clearContext(stereoContext2D);
 
-	drawPolygon(stereoContext2D, curPoly.getStereoProjection(), false, 2, "#669966", null, true);
+	drawPolygon(stereoContext2D, curPoly.getStereoProjection(), false, stereoLineWidth, stereoLineColor, null, true);
 	normalInputOutput.inputx.value = v.x.toFixed(3);
 	normalInputOutput.inputy.value = v.y.toFixed(3);
 	normalInputOutput.inputz.value = v.z.toFixed(3);
