@@ -146,7 +146,7 @@ InteractivePoints.style = {
 	materialData: {color: 0xcc3333}
 }
 
-InteractivePoints.addEventTypes = ["dblclick"];
+InteractivePoints.addEventTypes = ["dblclick", "tap"];
 InteractivePoints.startEventTypes = ["mousedown"];
 InteractivePoints.stopEventTypes = ["mouseup"];
 InteractivePoints.moveEventTypes = ["mousemove"];
