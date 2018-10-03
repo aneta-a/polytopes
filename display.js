@@ -162,7 +162,6 @@ var initCanvas3D = function () {
 
 var onPointsChange3d = function (ev) {
 	var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
-	console.log("on points change 3d", ev.detail, planeObj.error);
 	if (!planeObj.error) {
 		setSlidersValue(planeObj.dir, sliderPhi, sliderTheta)
 		sliderH.value = planeObj.h;

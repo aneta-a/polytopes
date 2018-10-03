@@ -104,7 +104,11 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 					index: o.polyEdgeIndex};
 
 		} else if (o && o.polyVertIndex >= 0) {
-			var plog = this.logicalPoly.vertices[o.polyVertIndex];
+			var plog;
+			if (hp && hp.dim == 4) {
+				plog = this.displayToLogical(p, hp, "vertex", o.polyVertIndex);
+
+			} else plog = this.logicalPoly.vertices[o.polyVertIndex];
 			return {logicalPoint: plog, 
 					displayPoint: plog.clone().multiplyScalar(this.scale), 
 					type: "vertex", 
@@ -213,7 +217,7 @@ PolyGroup.prototype = {
 		var p = disp.clone().multiplyScalar(1/this.scale);
 		if (hp && hp.isHyperPlane && hp.dim == 4) {
 			if (type.charAt(0) == "v") {
-				return this.logicalPoly.vertices[index].clone();
+				return cur4Poly.vertices[index].clone();
 			} else if (type.charAt(0) == "e") {
 				var v1 = cur4Poly.vertices[this.logicalPoly.edges[index][0]].clone();
 				var v2 = cur4Poly.vertices[this.logicalPoly.edges[index][1]].clone();
