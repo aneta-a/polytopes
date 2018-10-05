@@ -133,11 +133,16 @@ function addSingleClickListener(listener, dispatcher = document) {
 
 function addSingleTapListener(listener, dispatcher = document) {
 	dispatcher.addEventListener("touchstart", function (ev) {
-				
 				function upListener (ev_) {
-					if (ev_.touches.length == 1 &&
-						Math.abs(ev_.touches[0].clientX - ev.touches[0].clientX) + Math.abs(ev_.touches[0].clientY - ev.touches[0].clientY) < 4) {
-						dispatcher.dispatchEvent(new MouseEvent("singletap", ev_.touches[0]));
+					var tStart = ev.touches[0];
+					var tEnd = null;
+					for (var i = 0; i < ev_.changedTouches.length; i++) {
+						if (ev_.changedTouches[i].identifier == tStart.identifier) 
+							tEnd =  ev_.changedTouches[i];
+					}
+					if (tEnd &&
+						Math.abs(tEnd.clientX - tStart.clientX) + Math.abs(tEnd.clientY - tStart.clientY) < 4) {
+						dispatcher.dispatchEvent(new MouseEvent("singletap", tEnd));
 					}
 					dispatcher.removeEventListener("touchend", upListener);
 				};
@@ -145,7 +150,6 @@ function addSingleTapListener(listener, dispatcher = document) {
 					dispatcher.addEventListener("touchend", upListener);
 	});
 	dispatcher.addEventListener("singletap", listener);	
-	
 }
 
 
