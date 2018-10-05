@@ -155,7 +155,13 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 	var canvas = context.renderer.domElement;
 	var eventTypes = InteractivePoints.addEventTypes;
 	function setRC (ev) {
-		var pos2 = getMousePos(canvas, ev); //UIUtils
+		var ev_;
+		if (ev.touches) {
+			if (ev.touches.length > 0) 
+				ev_ = ev.touches[0];
+			else return;
+		} else ev_ = ev;
+		var pos2 = getMousePos(canvas, ev_); //UIUtils
 		var x = ( pos2.x / canvas.width ) * 2 - 1;
     	var y = -( pos2.y / canvas.height ) * 2 + 1;
     	rc.setFromCamera(new THREE.Vector2(x, y), context.camera);
@@ -207,6 +213,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 		
 	}
 	function moveHandler (ev) {
+		
 		setRC(ev);
 		var polyObj = getPointObj();
 		if (polyObj) points.movePoint(polyObj);
