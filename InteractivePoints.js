@@ -147,8 +147,8 @@ InteractivePoints.style = {
 }
 
 InteractivePoints.addEventTypes = ["dblclick"];
-InteractivePoints.startEventTypes = ["mousedown"];
-InteractivePoints.stopEventTypes = ["mouseup"];
+InteractivePoints.startEventTypes = ["mousedown", "touchstart"];
+InteractivePoints.stopEventTypes = ["mouseup", "touchend"];
 InteractivePoints.moveEventTypes = ["mousemove", "touchmove"];
 InteractivePoints.setClickManager = function (context, points, objects) {
 	var rc = new THREE.Raycaster();
