@@ -251,8 +251,8 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 			points.set(objs, "silent");
 		}
 	}
-	document.addEventListener("touchstart", function (ev) {alert("touchstart catched" + ev.clientX + ev.clientY)});
-	//addSingleTapListener(function(ev) {alert("single tap catched" + ev.clientX + ev.clientY)}); //UIUtils
+	addSingleTapListener(eventHandler, canvas); //UIUtils
+	addSingleClickListener(eventHandler, canvas); //UIUtils
 	canvas.addEventListener("hpchange", updateHp, false);
 }
 

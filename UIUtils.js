@@ -135,12 +135,14 @@ function addSingleTapListener(listener, dispatcher = document) {
 	dispatcher.addEventListener("touchstart", function (ev) {
 				
 				function upListener (ev_) {
-					if (Math.abs(ev_.clientX - ev.clientX) + Math.abs(ev_.clientY - ev.clientY) < 4) {
-						dispatcher.dispatchEvent(new MouseEvent("singletap", ev_));
+					if (ev_.touches.length == 1 &&
+						Math.abs(ev_.touches[0].clientX - ev.touches[0].clientX) + Math.abs(ev_.touches[0].clientY - ev.touches[0].clientY) < 4) {
+						dispatcher.dispatchEvent(new MouseEvent("singletap", ev_.touches[0]));
 					}
 					dispatcher.removeEventListener("touchend", upListener);
 				};
-				dispatcher.addEventListener("touchend", upListener);
+				if (ev.touches.length == 1)
+					dispatcher.addEventListener("touchend", upListener);
 	});
 	dispatcher.addEventListener("singletap", listener);	
 	
