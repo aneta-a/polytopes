@@ -146,7 +146,7 @@ InteractivePoints.style = {
 	materialData: {color: 0xcc3333}
 }
 
-InteractivePoints.addEventTypes = ["dblclick", "tap"];
+InteractivePoints.addEventTypes = ["dblclick"];
 InteractivePoints.startEventTypes = ["mousedown"];
 InteractivePoints.stopEventTypes = ["mouseup"];
 InteractivePoints.moveEventTypes = ["mousemove"];
@@ -251,6 +251,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 			points.set(objs, "silent");
 		}
 	}
+	addSingleTapListener(eventHandler, canvas); //UIUtils
 	canvas.addEventListener("hpchange", updateHp, false);
 }
 

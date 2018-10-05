@@ -116,6 +116,37 @@ function getRBSelectedValue (name) {
 	return val;
 }
 
+function addSingleClickListener(listener, dispatcher = document) {
+	dispatcher.addEventListener("mousedown", function (ev) {
+				
+				function upListener (ev_) {
+					if (Math.abs(ev_.clientX - ev.clientX) + Math.abs(ev_.clientY - ev.clientY) < 4) {
+						dispatcher.dispatchEvent(new MouseEvent("singleclick", ev_));
+					}
+					dispatcher.removeEventListener("mouseup", upListener);
+				};
+				dispatcher.addEventListener("mouseup", upListener);
+	});
+	dispatcher.addEventListener("singleclick", listener);	
+	
+}
+
+function addSingleTapListener(listener, dispatcher = document) {
+	dispatcher.addEventListener("touchstart", function (ev) {
+				
+				function upListener (ev_) {
+					if (Math.abs(ev_.clientX - ev.clientX) + Math.abs(ev_.clientY - ev.clientY) < 4) {
+						dispatcher.dispatchEvent(new MouseEvent("singletap", ev_));
+					}
+					dispatcher.removeEventListener("touchend", upListener);
+				};
+				dispatcher.addEventListener("touchend", upListener);
+	});
+	dispatcher.addEventListener("singletap", listener);	
+	
+}
+
+
 function copyObject(source, res) {
 	if (!res) res = {};
 	for (var f in source) {
