@@ -189,12 +189,12 @@ var onPointsChange3d = function (ev) {
 }
 var onPointsChange4d = function (ev) {
 	if (Array.isArray(ev.detail) && ev.detail.length >=4) {
-		var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+		var planeObj = ctx4d.moveSmooth ? new HyperPlane(ev.detail, curSectionHP4d.normal) : new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
 		if (!planeObj.error) {
-			setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
-			sliderH4d.value = planeObj.h;
-			sliderH4d.updateValueOutput();
-			updateDirection4d();
+			//setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
+			//sliderH4d.value = planeObj.h;
+			//sliderH4d.updateValueOutput();
+			updateDirection4d(planeObj);
 
 		}
 	}

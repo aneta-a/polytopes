@@ -200,8 +200,8 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 			} else if(polytopeElement.type == "vertex"){
 				var lp = polytopeElement.dim == 4 ? cur4Poly : curPoly;
 				return {
-					logicalPoint: lp.vertices[polytopeElemet.index],
-					displayPoint: pg.getVertex(polytopeElemet.index),
+					logicalPoint: lp.vertices[polytopeElement.index],
+					displayPoint: pg.getVertex(polytopeElement.index),
 					type: "vertex",
 					index: polytopeElement.index
 				}
@@ -239,6 +239,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 		}
 	}
 	var curDragPoint = null;
+	context.moveSmooth = false;
 	function startDragEventHandler(ev) {
 		context.controls.enableRotate = true;
 		ev.preventDefault();
@@ -251,7 +252,8 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 			addEvents(InteractivePoints.moveEventTypes, moveHandler, true);
 			addEvents(InteractivePoints.stopEventTypes, stopDragEventHandler, true);
 			document.addEventListener("mouseup", docStopDrag, false);
-			context.controls.enabled = false
+			context.controls.enabled = false;
+			context.moveSmooth = true;
 		}
 		
 	}
@@ -278,6 +280,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 		addEvents(InteractivePoints.stopEventTypes, stopDragEventHandler, false);
 		document.removeEventListener("mouseup", docStopDrag, false);
 		context.controls.enabled = true;
+		context.moveSmooth = false;
 	}
 	function addEvents(eventTypes_, handler_, add=true) {
 		for (var i = 0; i < eventTypes_.length; i++) {

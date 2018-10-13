@@ -179,7 +179,7 @@ PolyGroup.style.meshMaterialData = {color: 0xc8761e, opacity: 0.8, transparent: 
 PolyGroup.style.lineMaterialData = {color: 0x993333, linewidth: 4};
 PolyGroup.defaultType = {faces: true, edges: true, vertices: false, sticks: false};
 PolyGroup.style.vertexBallGeometry = {size: 0.25}
-PolyGroup.style.vertexBallMaterialData = { color: 0x888888};
+PolyGroup.style.vertexBallMaterialData = { opacity: 0.85, transparent: true, color: 0x888888};
 PolyGroup.style.edgeStickGeometry = {size: 0.1};
 PolyGroup.style.edgeStickMaterialData = {color: 0x66cc66};
 

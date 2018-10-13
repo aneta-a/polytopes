@@ -101,7 +101,7 @@ function initControls() {
 	
 	sliderPhi = setSlider("&phi;", -1, 1, "-&pi;", "&pi;", 0, "&pi;", sliderTableElement);
 	sliderTheta = setSlider("&theta;", 0, 1, "0", "&pi;", 0, "&pi;", sliderTableElement);
-	sliderH = setSlider("h", 0, 2, "0", "2", 0, "", sliderTableElement);
+	sliderH = setSlider("h", -2, 2, "-2", "2", 0, "", sliderTableElement);
 	document.body.appendChild(sliderTableElement);
 
 	normalInputOutput = setNormalInput("normalInput3d"); 
@@ -121,7 +121,7 @@ function initControls4D() {
 	sliderPhi4d = setSlider("&phi;", -1, 1, "-&pi;", "&pi;", 0, "&pi;");
 	sliderTheta4d = setSlider("&theta;", 0, 1, "0", "&pi;", 0, "&pi;");
 	sliderChi4d = setSlider("&chi;", 0, 1, "0", "&pi;", 0, "&pi;");
-	sliderH4d = setSlider("h", 0, 2, "0", "2", 0, "");
+	sliderH4d = setSlider("h", -2, 2, "-2", "2", 0, "");
 	
 	normalInputOutput4d = setNormalInput("normalInput4d", 4)
 	
@@ -153,20 +153,40 @@ function updateDirection(ev) {
 	normalInputOutput.inputy.value = v.y.toFixed(3);
 	normalInputOutput.inputz.value = v.z.toFixed(3);
 }
-function updateDirection4d(ev) {
-	curDir4d = {
-		theta: sliderTheta4d.value*Math.PI,
-		phi: sliderPhi4d.value*Math.PI,
-		chi: sliderChi4d.value*Math.PI
-	}	
-	curSectionHP4d = new HyperPlane(curDir4d, sliderH4d.value);
+function updateDirection4d(arg) {
+	var argType = "";
+	if (!arg || (arg.target && arg.target.type == "range")) {
+		
+		curDir4d = {
+			theta: sliderTheta4d.value*Math.PI,
+			phi: sliderPhi4d.value*Math.PI,
+			chi: sliderChi4d.value*Math.PI
+		}	
+		curSectionHP4d = new HyperPlane(curDir4d, sliderH4d.value);
+		argType = "event";
+	} else if (arg && arg.isVector4) {
+		curSectionHP4d = new HyperPlane(arg);
+		curDir4d = curSectionHP4d.dir;
+		argType = "vector";
+	} else if (arg && arg.isHyperPlane) {
+		curSectionHP4d = arg;
+		curDir4d = curSectionHP4d.dir;
+		argType = "hp"
+	}
+	if (argType != "event") {
+		setSlidersValue(curDir4d, sliderPhi4d, sliderTheta4d, sliderChi4d);
+		sliderH4d.value = curSectionHP4d.h;
+		sliderH4d.updateValueOutput();
+	}
+	if (argType != "vector") {
+		v = curSectionHP4d.orthoCenter.clone();
+		normalInputOutput4d.inputx.value = v.x.toFixed(3);
+		normalInputOutput4d.inputy.value = v.y.toFixed(3);
+		normalInputOutput4d.inputz.value = v.z.toFixed(3);
+		normalInputOutput4d.inputw.value = v.w.toFixed(3);
+	}
 	
 	cur4Projection = cur4Poly.getProjection(curDir4d);
-	v = curSectionHP4d.orthoCenter.clone();
-	normalInputOutput4d.inputx.value = v.x.toFixed(3);
-	normalInputOutput4d.inputy.value = v.y.toFixed(3);
-	normalInputOutput4d.inputz.value = v.z.toFixed(3);
-	normalInputOutput4d.inputw.value = v.w.toFixed(3);
 
 	ctx4d.renderer.domElement.dispatchEvent(new CustomEvent("hpchange", {detail: curSectionHP4d}));
 	updatePolytope();
@@ -205,10 +225,10 @@ function onDirVectorInput(name) {
 	var v = inputEl.getVector();
 	var dir = Utils.vectorToDir(v);
 	if (name == "normalInput4d") {
-		setSlidersValue(dir, sliderPhi4d, sliderTheta4d, sliderChi4d);
-		sliderH4d.value = v.length();
-		sliderH4d.updateValueOutput();
-		updateDirection4d();
+		//setSlidersValue(dir, sliderPhi4d, sliderTheta4d, sliderChi4d);
+		//sliderH4d.value = v.length();
+		//sliderH4d.updateValueOutput();
+		updateDirection4d(v);
 	} else {
 		setSlidersValue(dir, sliderPhi, sliderTheta)
 		sliderH.value = v.length();

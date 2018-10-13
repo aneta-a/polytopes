@@ -27,12 +27,13 @@ var HyperPlane = function () {
 		} 
 		else if (arguments[0].isVector3 || arguments[0].isVector4) {
 			this.dim = arguments[0].isVector4 ? 4 : 3;
-			this.orthoCenter = arguments[0].clone();
-			this.normal = this.orthoCenter.clone().normalize();
+			
+			this.normal = arguments[0].clone().normalize();
 			if (arguments.length > 1) {
 				this.h = arguments[1];
-				this.orthoCenter.setLength(this.h);
+				this.orthoCenter = this.normal.clone().multiplyScalar(this.h);
 			} else {
+				this.orthoCenter = arguments[0].clone();
 				this.h = this.orthoCenter.length();
 			}
 			this.dir = Utils.vectorToDir(this.normal);
@@ -57,7 +58,12 @@ var HyperPlane = function () {
 					this.dim = 3;
 					this.normal = n.normalize();
 					this.h = n.dot(a[0]);
-					if (this.h < 0) {
+					if (arguments[1] && arguments[1].isVector3) {
+						if (this.normal.dot(arguments[1]) < 0) {
+							this.normal.negate();
+							this.h = - this.h;
+						}
+					} else if (false) {// (this.h < 0) {
 						this.normal.negate();
 						this.h = - this.h;
 					}
@@ -68,17 +74,23 @@ var HyperPlane = function () {
 			else if (a[0].isVector4 && a.length >= 4) {
 				this.dim = 4;
 				var m = Utils.vectorsToMatrix(a);
-				if (Math.abs(m.determinant()) > 1e-3) {
+				if (Math.abs(m.determinant()) > 1e-6) {
 					
 					var right = new THREE.Vector4(1, 1, 1, 1);
 					this.normal = HyperPlane.linSolve(m, right);
 					this.normal.normalize();
+					if (arguments[1] && arguments[1].isVector4) {
+						if (this.normal.dot(arguments[1]) < 0) {
+							this.normal.negate();
+						}
+					}
 					this.h = this.normal.dot(a[0]);					
 					this.orthoCenter = this.normal.clone().multiplyScalar(this.h);
+					
 					this.dir = Utils.vectorToDir(this.normal);
 				} else {
 					var shft = new THREE.Vector4(1, 1, 1, 1);
-					//console.log("shift");
+					console.log("shift");
 					for (var i = 0; i < a.length; i++) {
 						a[i].sub(shft);
 					}
@@ -89,6 +101,11 @@ var HyperPlane = function () {
 						this.normal.normalize();
 						this.h = 0;
 						this.orthoCenter = new THREE.Vector4(0, 0, 0, 0);
+						if (arguments[1] && arguments[1].isVector4) {
+							if (this.normal.dot(arguments[1]) < 0) {
+								this.normal.negate();
+							}
+						}
 						this.dir = Utils.vectorToDir(this.normal);
 					}
 					else {
