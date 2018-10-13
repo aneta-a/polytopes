@@ -5,7 +5,7 @@
 
 //vertices - array of THREE.Vector3
 //faces - array of arrays of integer, inidices in 'vertices'
-var LogicalPolyhedron = function(vertices, faces) {
+var LogicalPolyhedron = function(vertices, faces, edges = null) {
 	this.dim = 3;
 	this.vertices = vertices;
 
@@ -76,7 +76,10 @@ var LogicalPolyhedron = function(vertices, faces) {
 		return this.faces;
 	}
 	this.getFaces(faces);
-	this.edges = getEdges(this.faces);
+	if (edges) {
+		this.edges = edges;
+	} else 
+		this.edges = getEdges(this.faces);
 
 	function getEdges(faces) {
 		res = [];
@@ -392,6 +395,9 @@ LogicalPolyhedron.prototype = {
 	projectToEdge: function (p, index) {
 		return Utils.projectToVector(p, this.vertices[this.edges[index][0]], this.vertices[this.edges[index][1]]);
 	},
+	getPointOnEdge: function (index, alpha) {
+		return this.vertices[this.edges[index][0]].clone().lerp(this.vertices[this.edges[index][1]], alpha);
+	}, 
 	getFaceHP: function (index) {
 		var vertsArr = [];
 		for (var i = 0; i < this.faces[index].length; i++) {
@@ -485,7 +491,7 @@ lppp.getProjection = function (direction){
 		var v4 = this.vertices[i].clone().applyMatrix4(mat);
 		newVerts.push(new THREE.Vector3(v4.x, v4.y, v4.z));
 	}
-	return new LogicalPolyhedron(newVerts, this.faces)
+	return new LogicalPolyhedron(newVerts, this.faces, this.edges)
 }
 lppp.getDual = function(normalized = true) {
 //returns dual polytope (vertices = centers of 3d cells)

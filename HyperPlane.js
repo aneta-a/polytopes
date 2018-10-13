@@ -8,8 +8,7 @@ var HyperPlane = function () {
 		this.h = 0;
 		this.normal = d == 4 ? new THREE.Vector4() : new THREE.Vector3(0, 0, 1);
 		this.orthoCenter = this.normal.clone().setLength(this.h);
-		if (error) 
-			console.warn("Invalid HyperPlane arguments", error, argsPtr);
+		if (error) console.warn("Invalid HyperPlane arguments", error, argsPtr);
 		this.error = error;
 	}
 	this.isHyperPlane = true;
@@ -69,20 +68,17 @@ var HyperPlane = function () {
 			else if (a[0].isVector4 && a.length >= 4) {
 				this.dim = 4;
 				var m = Utils.vectorsToMatrix(a);
-				if (Math.abs(m.determinant()) > 1e-10) {
+				if (Math.abs(m.determinant()) > 1e-3) {
+					
 					var right = new THREE.Vector4(1, 1, 1, 1);
 					this.normal = HyperPlane.linSolve(m, right);
 					this.normal.normalize();
-					this.h = this.normal.dot(a[0]);
-					if (this.h < 0) {
-						console.log("below zero");
-							this.normal.negate();
-							this.h = - this.h;
-					}
+					this.h = this.normal.dot(a[0]);					
 					this.orthoCenter = this.normal.clone().multiplyScalar(this.h);
 					this.dir = Utils.vectorToDir(this.normal);
 				} else {
 					var shft = new THREE.Vector4(1, 1, 1, 1);
+					//console.log("shift");
 					for (var i = 0; i < a.length; i++) {
 						a[i].sub(shft);
 					}

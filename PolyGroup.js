@@ -25,7 +25,7 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 		var bGeo = new THREE.BufferGeometry;
 		this.bufferPolyhedron.geometry = bGeo;
 		this.bufferPolyhedron.material = new THREE.MeshLambertMaterial (this.style.meshMaterialData);
-		this.bufferPolyhedron.livePoly = true;
+		this.bufferPolyhedron.userData.livePoly = true;
 		this.group.add(this.bufferPolyhedron);
 	}
 	if (this.type.sticks) {
@@ -66,57 +66,106 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 	};
 	
 	this.getIntersect = function(raycaster, hp) {
-		var intersects = raycaster.intersectObject(this.group, true);
-		var i = 0; 
-		var found = false;
-		var o, p, d, f;
-		while (i < intersects.length && !found) {
-			o = intersects[i].object;
-			if (o.livePoly  || o.polyEdgeIndex >= 0 || o.polyVertIndex >= 0) {
-				found = true;
-				p = intersects[i].point;
-				d = intersects[i].distance;
-				if (o.livePoly)
-					f = intersects[i].faceIndex;
+		if (hp && hp.dim == 4) {
+			var tol = this.style.numbers.tolerance; 
+			var r = raycaster.ray;
+			var toltol = tol*tol;
+			var minDist = 10000;
+			var vertex = null;
+			var edgeObj = null;
+			var edgePoint = new THREE.Vector3();
+			if (this.type.vertices) {
+				
+				for (var i = 0; i < this.verts.length; i ++) {
+					var rPoint = new THREE.Vector3();
+					if (this.verts[i].visible) {
+						var d = r.distanceSqToPoint(this.verts[i].position);
+						if (d < toltol) {
+							var l = r.origin.distanceToSquared(this.verts[i].position);
+							if (l < minDist) {
+								minDist = l;
+								vertex = {index: i, position: this.verts[i].position.clone()}
+							}
+						}
+					}
+				}
 			}
-			i++;
-		}
-		if (o && o.livePoly) {
-			var face = this.geoFaceIndices[f/3];
-			var plog = this.logicalPoly.projectToFace(p.clone().multiplyScalar(1/this.scale), face);
-			
-			return {logicalPoint: plog, 
-					displayPoint: plog.clone().multiplyScalar(this.scale), 
-					type: "face", 
-					distance: d, 
-					index: face};
-		} else if (o && o.polyEdgeIndex >= 0) {
-			
-			var plog;
-			if (hp && hp.dim == 4) {
-				plog = this.displayToLogical(p, hp, "edge", o.polyEdgeIndex);
-
-			} else plog = this.logicalPoly.projectToEdge(p.clone().multiplyScalar(1/this.scale), o.polyEdgeIndex);
-			return {logicalPoint: plog, 
-					displayPoint: (hp && hp.dim == 4) ? this.logicalToDisplay(plog, hp) : plog.clone().multiplyScalar(this.scale), 
-					type: "edge", 
-					distance: d, 
-					index: o.polyEdgeIndex};
-
-		} else if (o && o.polyVertIndex >= 0) {
-			var plog;
-			if (hp && hp.dim == 4) {
-				plog = this.displayToLogical(p, hp, "vertex", o.polyVertIndex);
-
-			} else plog = this.logicalPoly.vertices[o.polyVertIndex];
-			return {logicalPoint: plog, 
-					displayPoint: plog.clone().multiplyScalar(this.scale), 
+			if (vertex) {
+				return {logicalPoint: cur4Poly.vertices[vertex.index].clone(), 
+					displayPoint: this.verts[vertex.index].position.clone(), 
 					type: "vertex", 
-					distance: d, 
-					index: o.polyVertIndex};
+					distance: Math.sqrt(minDist), 
+					index: vertex.index};
+			}
+			if (this.type.edges || this.type.sticks) {
+				minDist = 10000;
+				
+				var rPoint = new THREE.Vector3();
+				for (var i = 0; i < this.logicalPoly.edges.length; i++) {
+					var seg = this.getEdgeSegment(i);
+					var d = r.distanceSqToSegment(seg.v1, seg.v2, rPoint, edgePoint);
+					if (d < toltol) {
+						var l = r.origin.distanceToSquared(edgePoint);
+						if (l < minDist) {
+							minDist = l;
+							edgeObj = {index: i, position: edgePoint.clone()};
+						}
+					}
+				}
+			}
+			if (edgeObj) {				
+				return {logicalPoint: this.displayToLogical(edgeObj.position, hp, "edge", edgeObj.index), 
+					displayPoint: edgeObj.position.clone(), 
+					type: "edge", 
+					distance: Math.sqrt(minDist), 
+					index: edgeObj.index};
+				
+			}
+		} else {
+			var intersects = raycaster.intersectObject(this.group, true);
+			var i = 0; 
+			var found = false;
+			var o, p, d, f;
+			while (i < intersects.length && !found) {
+				o = intersects[i].object;
+				if (o.userData.livePoly  || o.userData.polyEdgeIndex >= 0 || o.userData.polyVertIndex >= 0) {
+					found = true;
+					p = intersects[i].point;
+					d = intersects[i].distance;
+					if (o.userData.livePoly)
+						f = intersects[i].faceIndex;
+				}
+				i++;
+			}
+			if (o && o.userData.livePoly) {
+				var face = this.geoFaceIndices[f/3];
+				var plog = this.logicalPoly.projectToFace(p.clone().multiplyScalar(1/this.scale), face);
+			
+				return {logicalPoint: plog, 
+						displayPoint: plog.clone().multiplyScalar(this.scale), 
+						type: "face", 
+						distance: d, 
+						index: face};
+			} else if (o && o.userData.polyEdgeIndex >= 0) {
+			
+				var plog= this.logicalPoly.projectToEdge(p.clone().multiplyScalar(1/this.scale), o.userData.polyEdgeIndex);
+				return {logicalPoint: plog, 
+						displayPoint: plog.clone().multiplyScalar(this.scale), 
+						type: "edge", 
+						distance: d, 
+						index: o.userData.polyEdgeIndex};
 
+			} else if (o && o.userData.polyVertIndex >= 0) {
+				var plog = this.logicalPoly.vertices[o.userData.polyVertIndex];
+				return {logicalPoint: plog, 
+						displayPoint: plog.clone().multiplyScalar(this.scale), 
+						type: "vertex", 
+						distance: d, 
+						index: o.userData.polyVertIndex};
+
+			}
 		}
-		return null; //{logicalPoint: new THREE.Vector3(1, 2, 3), displayPoint: new THREE.Vector3(4, 5, 6)}
+		return null; 
 	}
 
 	scene.add(this.group);
@@ -125,7 +174,7 @@ var PolyGroup = function(scene, poly, styleParameters, type) {
 }
 
 PolyGroup.style = {};
-PolyGroup.style.numbers = {scale3D: 10, linesBufferLength: 300,  ballsBufferLength: 50}
+PolyGroup.style.numbers = {scale3D: 10, linesBufferLength: 300,  ballsBufferLength: 50, tolerance: 0.3}
 PolyGroup.style.meshMaterialData = {color: 0xc8761e, opacity: 0.8, transparent: true, side: THREE.DoubleSide};
 PolyGroup.style.lineMaterialData = {color: 0x993333, linewidth: 4};
 PolyGroup.defaultType = {faces: true, edges: true, vertices: false, sticks: false};
@@ -141,7 +190,7 @@ PolyGroup.prototype = {
 		function updateWireFrame(lines, curPoly, sc) {
 			var newGeoms = curPoly.getEdgeGeometries(sc, false);
 			for (var i = 0; i < newGeoms.length; i++) {
-				lines[i].polyEdgeIndex = i;
+				lines[i].userData.polyEdgeIndex = i;
 				lines[i].geometry = newGeoms[i];
 				lines[i].visible = true;
 				lines[i].geometry.needsUpdate = true;
@@ -157,7 +206,7 @@ PolyGroup.prototype = {
 			var visibleSticks = Math.min(curPoly.edges.length, lines.length);
 			for (var i = 0; i < visibleSticks; i++) {
 				lines[i].visible = true;
-				lines[i].polyEdgeIndex = i;
+				lines[i].userData.polyEdgeIndex = i;
 				var m = Utils.edgeTransformMatrix (curPoly.vertices[curPoly.edges[i][0]], curPoly.vertices[curPoly.edges[i][1]], sc);
 				lines[i].matrix.copy(m);
 				lines[i].matrixAutoUpdate = false;
@@ -174,9 +223,10 @@ PolyGroup.prototype = {
 			var visibleVerts = Math.min(curPoly.vertices.length, balls.length);
 			for (var i = 0; i < visibleVerts; i++) {
 				var pos = curPoly.vertices[i].clone().multiplyScalar(sc);
-				balls[i].polyVertIndex = i;
+				balls[i].userData.polyVertIndex = i;
 				balls[i].visible = true;
 				balls[i].position.set(pos.x, pos.y, pos.z);
+				
 			}
 			for (var i = visibleVerts; i < balls.length; i++) {
 				balls[i].visible = false;
@@ -233,7 +283,16 @@ PolyGroup.prototype = {
 			
 		}
 		return p;
+	},
+	getEdgeSegment: function (index) {
+		return {
+					v1: this.logicalPoly.vertices[this.logicalPoly.edges[index][0]].clone().multiplyScalar(this.scale),
+					v2: this.logicalPoly.vertices[this.logicalPoly.edges[index][1]].clone().multiplyScalar(this.scale)
+		}
 	}, 
+	getVertex: function (index) {
+		return this.logicalPoly.vertices[index].clone().multiplyScalar(this.scale);
+	},
 	logicalToDisplay: function (logp, hp) {
 		if (logp.isVector4 && hp && hp.dim == 4) {
 			var p = hp.project(logp);
@@ -244,9 +303,21 @@ PolyGroup.prototype = {
 		} else {
 			return logp.clone().multiplyScalar(this.scale);
 		}
+	},
+	getVertexPprojections: function(camera){
+		if (this.type.vertices) {
+			var res = [];
+			for (var i in this.verts){
+				if (this.verts[i].position && this.verts[i].visible) {
+					res.push (this.verts[i].position.clone().project(camera));
+				}
+			}
+			return res;
+		} return null
 	}
 	
 }
+
 
 console.log("PolyGroup loaded");
 

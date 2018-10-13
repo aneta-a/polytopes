@@ -27,7 +27,7 @@ var InteractivePoints = function(context, dim = 3, style = {}) {
 	
 	for (var i = 0; i < dim; i++) {
 		this.balls[i] = createBall();
-		this.balls[i].indexIntPoint = i;
+		this.balls[i].userData.indexIntPoint = i;
 		this.group.add(this.balls[i]);
 	}
 	this.context.scene.add(this.group);
@@ -58,7 +58,7 @@ InteractivePoints.prototype = {
 		this.balls[ind].visible = true;
 		var p = posObj.displayPoint;
 		this.balls[ind].position.set(p.x, p.y, p.z);
-		this.activePoints[ind] = posObj.logicalPoint.clone();
+		this.activePoints[ind] = {logicalPoint: posObj.logicalPoint.clone(), type: posObj.type, index: posObj.index, dim: this.dim};
 		this.dispatchEvent()
 	},
 	getCount: function () {
@@ -71,7 +71,7 @@ InteractivePoints.prototype = {
 	removePoint: function (point) {
 		var ind, p;
 		if (point.isMesh) {
-			ind = point.indexIntPoint;
+			ind = point.userData.indexIntPoint;
 			p = point;
 		} else {
 			ind = point;
@@ -83,11 +83,13 @@ InteractivePoints.prototype = {
 
 	},
 	startDrag: function (intrObject) {
-		this.dragPointIndex = intrObject.object.indexIntPoint;
+		this.dragPointIndex = intrObject.object.userData.indexIntPoint;
+		return this.activePoints[this.dragPointIndex];
 	},
 	movePoint: function (newPosObj) {
 		if (this.dragPointIndex >= 0) {
-			this.activePoints[this.dragPointIndex] = newPosObj.logicalPoint.clone();
+			this.activePoints[this.dragPointIndex].logicalPoint = newPosObj.logicalPoint.clone();
+			//??Should we change type and index here?
 			var p = newPosObj.displayPoint.clone();
 			this.balls[this.dragPointIndex].position.set(p.x, p.y, p.z);
 			this.dispatchEvent();
@@ -100,13 +102,21 @@ InteractivePoints.prototype = {
 		var res = [];
 		for (var i = 0; i < this.dim; i++) {
 			if (this.activePoints[i])
-				res.push(this.activePoints[i].clone());
+				res.push(this.activePoints[i].logicalPoint.clone());
 		}
 		return res;
 	},
-	set: function (newPosObjs, mode) {
+	set: function (newPosObjs, mode, preserveTypes = false) {
 		var oldSilent = this.silent;
 		this.silent = true;
+		if (preserveTypes) {
+			for (var i = 0; i < newPosObjs.length; i++) {
+				if (this.activePoints[i]) {
+					newPosObjs[i].type = this.activePoints[i].type;
+					newPosObjs[i].index = this.activePoints[i].index;
+				}
+			}
+		}
 		this.clear();
 		for (var i = 0; i < Math.min(this.dim, newPosObjs.length); i++) {
 			this.addPoint(newPosObjs[i]);
@@ -127,7 +137,7 @@ InteractivePoints.prototype = {
 		if (intersects.length > 0) {
 			this.silent = true;
 			for (var i = 0; i < intersects.length; i++) {
-				var ind = intersects[i].object.indexIntPoint;
+				var ind = intersects[i].object.userData.indexIntPoint;
 				if (ind >= 0)
 					this.removePoint(ind);
 			}
@@ -166,10 +176,41 @@ InteractivePoints.setClickManager = function (context, points, objects) {
     	var y = -( pos2.y / canvas.height ) * 2 + 1;
     	rc.setFromCamera(new THREE.Vector2(x, y), context.camera);
 	}
-	function getPointObj () {
+	function getPointObj (polytopeElement = null) {
+		
+		if (polytopeElement && polytopeElement.dim == 4) {
+			var pg = objects[0];
+			if (polytopeElement.type == "edge") {
+				var seg = pg.getEdgeSegment(polytopeElement.index);
+				var rPoint = new THREE.Vector3();
+				var edgePoint = new THREE.Vector3();                                           
+				var d = rc.ray.distanceSqToSegment(seg.v1, seg.v2, rPoint, edgePoint);
+				var dv = new THREE.Vector3().subVectors(seg.v2, seg.v1);
+				var dd = new THREE.Vector3().subVectors(edgePoint, seg.v1).dot(dv);
+				var alpha = dd/dv.lengthSq();
+				alpha = Math.min(1, Math.max(0, alpha));
+				var lp = polytopeElement.dim == 4 ? cur4Poly : curPoly;
+				return {
+					logicalPoint: lp.getPointOnEdge(polytopeElement.index, alpha),
+					displayPoint: edgePoint.clone(),
+					type: "edge",
+					index: polytopeElement.index
+				}
+			
+			} else if(polytopeElement.type == "vertex"){
+				var lp = polytopeElement.dim == 4 ? cur4Poly : curPoly;
+				return {
+					logicalPoint: lp.vertices[polytopeElemet.index],
+					displayPoint: pg.getVertex(polytopeElemet.index),
+					type: "vertex",
+					index: polytopeElement.index
+				}
+			}
+		}
 		var intersectsObjects = [];
 		for (var j = 0; j < objects.length; j++) {
 			var pg = objects[j];
+			
 			var curObj = pg.getIntersect(rc, points.dim == 4 ? curSectionHP4d : null);
 			intersectsObjects.push(curObj);
 		}
@@ -197,6 +238,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 			}
 		}
 	}
+	var curDragPoint = null;
 	function startDragEventHandler(ev) {
 		context.controls.enableRotate = true;
 		ev.preventDefault();
@@ -204,7 +246,8 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 		setRC(ev);
 		var intersectsPoints = rc.intersectObject(points.group, true);
 		if (intersectsPoints.length > 0) {
-			points.startDrag(intersectsPoints[0]);
+			curDragPoint = points.startDrag(intersectsPoints[0]);
+			
 			addEvents(InteractivePoints.moveEventTypes, moveHandler, true);
 			addEvents(InteractivePoints.stopEventTypes, stopDragEventHandler, true);
 			document.addEventListener("mouseup", docStopDrag, false);
@@ -215,7 +258,11 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 	function moveHandler (ev) {
 		
 		setRC(ev);
-		var polyObj = getPointObj();
+		var polyObj;
+		if (points.dim == 4 && curDragPoint) {
+			polyObj = getPointObj(curDragPoint);
+		}
+		else polyObj = getPointObj();
 		if (polyObj) points.movePoint(polyObj);
 	}
 	
@@ -225,7 +272,8 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 		
 	}
 	function stopDragEventHandler(ev) {
-		points.stopDrag();              
+		points.stopDrag(); 
+		curDragPoint = null;             
 		addEvents(InteractivePoints.moveEventTypes, moveHandler, false);
 		addEvents(InteractivePoints.stopEventTypes, stopDragEventHandler, false);
 		document.removeEventListener("mouseup", docStopDrag, false);
@@ -246,6 +294,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 	addEvents(InteractivePoints.startEventTypes, startDragEventHandler, true);
 	
 	function updateHp (ev) {
+		//In 4d, when projection plane changes, the points change their positions. 
 		var hp = ev.detail;
 		if (hp && hp.isHyperPlane && hp.dim == 4 && points.dim == 4) {
 			var lPoints = points.getLogical();
@@ -255,7 +304,7 @@ InteractivePoints.setClickManager = function (context, points, objects) {
 				
 				objs.push({logicalPoint: lPoints[i], displayPoint: pg.logicalToDisplay (lPoints[i], hp)});
 			}
-			points.set(objs, "silent");
+			points.set(objs, "silent", true);
 		}
 	}
 	addSingleTapListener(eventHandler, canvas); //UIUtils

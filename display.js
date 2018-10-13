@@ -176,23 +176,27 @@ var initCanvas3D = function () {
 }
 
 var onPointsChange3d = function (ev) {
-	var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
-	if (!planeObj.error) {
-		setSlidersValue(planeObj.dir, sliderPhi, sliderTheta)
-		sliderH.value = planeObj.h;
-		sliderH.updateValueOutput();
-		updateDirection();
+	if (Array.isArray(ev.detail) && ev.detail.length >=3) {
+		var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+		if (!planeObj.error) {
+			setSlidersValue(planeObj.dir, sliderPhi, sliderTheta)
+			sliderH.value = planeObj.h;
+			sliderH.updateValueOutput();
+			updateDirection();
 
+		}
 	}
 }
 var onPointsChange4d = function (ev) {
-	var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
-	if (!planeObj.error) {
-		setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
-		sliderH4d.value = planeObj.h;
-		sliderH4d.updateValueOutput();
-		updateDirection4d();
+	if (Array.isArray(ev.detail) && ev.detail.length >=4) {
+		var planeObj = new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+		if (!planeObj.error) {
+			setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
+			sliderH4d.value = planeObj.h;
+			sliderH4d.updateValueOutput();
+			updateDirection4d();
 
+		}
 	}
 }
 
