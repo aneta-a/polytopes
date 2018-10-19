@@ -18,7 +18,8 @@ var solids = {}, solids4d = {};
 
 function init()
 {
-
+	setStrings();
+	createInfo();
 	solids = {	
 		Tetrahedron: tetrahedron, 
 		Cube: cube,
@@ -40,39 +41,65 @@ function init()
 	cur4Projection = simplex.getProjection(curDir4d);
 	curSectionHP4d = new HyperPlane(curDir4d, 0);
 	
-	document.body.appendChild(document.createElement("h2")).innerHTML = "Regular polyhedra"
+	function createViewHead (parent, content) {
+		var h2 = document.createElement("h2");
+		h2.innerHTML = content;
+		h2.setAttribute("class", "view-head");
+		parent.appendChild(h2);
+	}
 	
-	var c3d = initCanvas3D();
-	var c2d = initCanvas2D();
-	var c2ds = initStereoCanvas2D();
-	var cRow = document.body.appendChild(document.createElement("table")).appendChild(document.createElement("tr"));
-	var td1 = document.createElement("td");
-	td1.appendChild(c3d);
-	cRow.appendChild(td1);
-	var td2 = document.createElement("td");
-	td2.appendChild(c2d);
-	cRow.appendChild(td2);
-	var td3 = document.createElement("td");
-	td3.appendChild(c2ds);
-	cRow.appendChild(td3);
-	initControls();
-
-	document.body.appendChild(document.createElement("h2")).innerHTML = "Some regular and semiregular polytopes"
+	var view3d = document.getElementById("view3d");
+	createViewHead(view3d, strings.Head3d);
 	
-	initCanvas4D();
-	var c4d =  createCanvasBlock(ctx4d, "Section and Projection");
-	var c4ds =  createCanvasBlock(ctx4dstereo, "Stereographic Projection");
-	var cRow = document.body.appendChild(document.createElement("table")).appendChild(document.createElement("tr"));
-	var td1 = document.createElement("td");
-	td1.appendChild(c4d);
-	cRow.appendChild(td1);
-	var td2 = document.createElement("td");
-	td2.appendChild(c4ds);
-	cRow.appendChild(td2);
-	initControls4D();
+	canvas3d = createCanvasBlock(view3d, strings.Main3d, "main3d");
+	canvas2D = createCanvasBlock(view3d, strings.Proj3d, "proj3d");
+	stereoCanvas2D = createCanvasBlock(view3d, strings.Stereo3d, "stereo3d");
 	
+	initControls(view3d);
+	
+	var view4d = document.getElementById("view4d");
+	createViewHead(view4d, strings.Head4d);
+	
+	canvas4d = createCanvasBlock(view4d, strings.Main4d, "main4d");
+	canvas4dstereo = createCanvasBlock(view4d, strings.Stereo4d, "stereo4d");
+	
+	initControls4D(view4d);
+	
+	initCanvas3D(view3d);
+	initCanvas4D(view4d);
+	
+	window.addEventListener("resize", onWindowResize);
 	updateDirection();
   	animate();
+}
+
+function createInfo() {
+	function setP(id, contentName) {
+		document.getElementById(id).innerHTML = strings[contentName];
+	}
+	
+	setP("mainhead", "Interactive_Polytopes");
+	setP("info-common", "About1");
+	setP("info3d", "About2");
+	setP("info4d", "About3");
+	setP("thnx", "Thanks");
+	setP("contact", "Mail");
+	setP("signature", "Sign");
+	
+	document.getElementById("contact").innerHTML += " <img id=\"imgmail\" src=\"a.png\"/>"
+}
+
+function onWindowResize(ev) {
+	resizeCanvas(canvas2D);
+	resizeCanvas(stereoCanvas2D);
+	resizeCanvas(ctx3d);
+	resizeCanvas(ctx4d);
+	resizeCanvas(ctx4dstereo);
+	updateDirection();
+	    //updateThreeContext(ctx3d);
+    //updateThreeContext(ctx4d); 
+    //updateThreeContext(ctx4dstereo); 
+
 }
 
 function onSolidChange (ev) {
@@ -94,36 +121,48 @@ function onSolid4dChange (ev) {
 
 }
 
-function initControls() {
-	//createRadioGroup (object, name, defaultValueName = null, parent = document.body, layout="horizontal")
-	var selectSolid = createRadioGroup (solids, "solid", "Icosahedron", onSolidChange);
-	var sliderTableElement = document.createElement("table");
+function initControls(parent) {
+	var selectSolid = createRadioGroup (solids, "solid", "Icosahedron", onSolidChange, parent, strings);
 	
+	var controlsBlock = createDiv("controlblock");
+	
+	var sliderTableElement = createDiv("sliders-block");
+
 	sliderPhi = setSlider("&phi;", -1, 1, "-&pi;", "&pi;", 0, "&pi;", sliderTableElement);
 	sliderTheta = setSlider("&theta;", 0, 1, "0", "&pi;", 0, "&pi;", sliderTableElement);
 	sliderH = setSlider("h", -2, 2, "-2", "2", 0, "", sliderTableElement);
-	document.body.appendChild(sliderTableElement);
-
-	normalInputOutput = setNormalInput("normalInput3d"); 
+	controlsBlock.appendChild(sliderTableElement);
+	
+	
+	normalInputOutput = setNormalInput("normalInput3d", 3, controlsBlock); 
+	parent.appendChild(controlsBlock);
 
 	sliderPhi.addEventListener("change", updateDirection);
 	sliderTheta.addEventListener("change", updateDirection);
 	sliderH.addEventListener("change", updateDirection);
 
-	document.body.appendChild (document.createElement("br"));
+	
 	
 
 }
 
-function initControls4D() {
-	var selectSolid4d = createRadioGroup (solids4d, "solid4d", "Simplex", onSolid4dChange);
+function initControls4D(parent) {
+	var selectSolid4d = createRadioGroup (solids4d, "solid4d", "Simplex", onSolid4dChange, parent, strings);
 	
-	sliderPhi4d = setSlider("&phi;", -1, 1, "-&pi;", "&pi;", 0, "&pi;");
-	sliderTheta4d = setSlider("&theta;", 0, 1, "0", "&pi;", 0, "&pi;");
-	sliderChi4d = setSlider("&chi;", 0, 1, "0", "&pi;", 0, "&pi;");
-	sliderH4d = setSlider("h", -2, 2, "-2", "2", 0, "");
+	var controlsBlock = createDiv("controlblock");
 	
-	normalInputOutput4d = setNormalInput("normalInput4d", 4)
+	var sliderTableElement = createDiv("sliders-block");
+
+	
+	
+	sliderPhi4d = setSlider("&phi;", -1, 1, "-&pi;", "&pi;", 0, "&pi;", sliderTableElement);
+	sliderTheta4d = setSlider("&theta;", 0, 1, "0", "&pi;", 0, "&pi;", sliderTableElement);
+	sliderChi4d = setSlider("&chi;", 0, 1, "0", "&pi;", 0, "&pi;", sliderTableElement);
+	sliderH4d = setSlider("h", -2, 2, "-2", "2", 0, "", sliderTableElement);
+	controlsBlock.appendChild(sliderTableElement);
+	
+	normalInputOutput4d = setNormalInput("normalInput4d", 4, controlsBlock);
+	parent.appendChild(controlsBlock);
 	
 	sliderPhi4d.addEventListener("change", updateDirection4d);
 	sliderTheta4d.addEventListener("change", updateDirection4d);
@@ -195,12 +234,14 @@ function updateDirection4d(arg) {
 
 function setNormalInput(name, dim = 3, parent = document.body) {
 	var res = document.createElement("span");
+	res.setAttribute("class", "vector-input");
 	res.setAttribute("name", name);
 	res.appendChild(document.createTextNode("n = ("));
 	var compNames = ["x", "y", "z", "w"];
 	for (var i = 0; i < dim; i++) {
 		var input = document.createElement("input");
 		input.setAttribute("type", "text");
+		input.setAttribute("class", "vector-input-field");
 		input.setAttribute("size", 6);
 		input.value = "0.000";
 		res.appendChild(input);
@@ -216,7 +257,9 @@ function setNormalInput(name, dim = 3, parent = document.body) {
 		}
 		return vect;
 	}
-	parent.appendChild(res);
+	var inputBlock = createDiv("inputblock");
+	inputBlock.appendChild(res);
+	parent.appendChild(inputBlock);
 	return res;
 }
 
@@ -225,9 +268,6 @@ function onDirVectorInput(name) {
 	var v = inputEl.getVector();
 	var dir = Utils.vectorToDir(v);
 	if (name == "normalInput4d") {
-		//setSlidersValue(dir, sliderPhi4d, sliderTheta4d, sliderChi4d);
-		//sliderH4d.value = v.length();
-		//sliderH4d.updateValueOutput();
 		updateDirection4d(v);
 	} else {
 		setSlidersValue(dir, sliderPhi, sliderTheta)
@@ -253,15 +293,24 @@ function clearCanvas2D () {
 	clearContext(context2D);
 }
 
-function createCanvasBlock(element, name, parent = document.body) {
-	var cell = document.createElement("table");
-	var h = cell.appendChild(document.createElement("tr")).appendChild(document.createElement("th"));
+function createCanvasBlock(parent, name, id) {
+	var canvas = document.createElement("canvas");
+	if (id) 
+		canvas.setAttribute("id", id + "canvas");
+	var cell = createDiv("canvasblock");
+	if (id)
+		cell.setAttribute("id", id + "block");
+	var h = document.createElement("h3");
+	h.setAttribute("class", "canvas-head");
+	cell.appendChild(h);
 	h.innerHTML = name;
-	var c = cell.appendChild(document.createElement("tr")).appendChild(document.createElement("td"));
-	if (element.hasOwnProperty("renderer")) element = element.renderer.domElement;
-	c.appendChild(element);
+	var c = createDiv("direct-canvas-container");
+	c.appendChild(canvas);
+	cell.appendChild(c);
 	parent.appendChild(cell);
-	return cell;
+	
+	
+	return canvas;
 }
 
 function animate()

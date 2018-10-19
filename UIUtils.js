@@ -28,14 +28,13 @@ function getMousePos(canvas, evt) {
 
 
 
-function createRadioGroup (object, name, defaultValueName = null, eventListener=null, parent = document.body, layout="horizontal") {
+function createRadioGroup (object, name, defaultValueName = null, eventListener=null, parent = document.body, namesObject = null) {
 	var dom = document.createElement("div");
+	dom.setAttribute("class", "rgroup");
 	for (var f in object) {
 		if (object.hasOwnProperty(f)) {
-			addRadio(f, name, dom, eventListener);
-			if (layout.toLowerCase().charAt(0) == "v") {
-				dom.appendChild(document.createElement("br"));
-			}
+			var labelStr = (namesObject && namesObject.hasOwnProperty(f)) ? namesObject[f] : f;
+			addRadio(f, name, dom, eventListener, labelStr);
 		}
 	}
 	parent.appendChild(dom);
@@ -44,8 +43,16 @@ function createRadioGroup (object, name, defaultValueName = null, eventListener=
 	return dom
 }
 
+function createDiv(className) {
+	var div = document.createElement("div");
+	div.setAttribute("class", className);
+	return div;
 
-function addRadio(val, name, parentNode, eventListener) {
+}
+
+function addRadio(val, name, parentNode, eventListener, labelStr) {
+	var div = document.createElement("div");
+	div.setAttribute("class", "rb-item");
 	var res = document.createElement("input");
 	res.setAttribute("type", "radio");
 	res.setAttribute("name", name);
@@ -53,8 +60,9 @@ function addRadio(val, name, parentNode, eventListener) {
 	var id = val+name+"rb"
 	res.setAttribute("id", id);
 	var label = document.createElement("label");
+	label.setAttribute("class", "radiolabel");
 	label.setAttribute("for", id);
-	label.innerHTML = val;
+	label.innerHTML = labelStr;
 	if (eventListener && eventListener instanceof Function) 
 		res.addEventListener("change", eventListener);
 	else 
@@ -64,8 +72,9 @@ function addRadio(val, name, parentNode, eventListener) {
 					else 
 						console.warn("Function onRadioGroupChange(nameOfTheGroup, selectedValue) is not implemented")
 				});
-	parentNode.appendChild(res);
-	parentNode.appendChild(label);
+	div.appendChild(res);
+	div.appendChild(label);
+	parentNode.appendChild(div);
 	return res;
 }
 
@@ -76,9 +85,11 @@ function setSlider (name, mn, mx, mnStr, mxStr, startVal, postfix="", parent = d
 	res.setAttribute("max", mx);
 	res.setAttribute("step", (mx-mn)/2000);
 	res.setAttribute("value", startVal);
-	var tr = document.createElement("tr");
-	tr.setAttribute("valign", "bottom");
-	var td1 = document.createElement("td");
+	
+	var tr = document.createElement("div");
+	tr.setAttribute("class", "slider-block");
+	var td1 = document.createElement("div");
+	td1.setAttribute("class", "slider-value");
 	var valueEl = document.createElement("span")
 	valueEl.innerHTML = Number(res.value).toFixed(3) + postfix;
 	var valueElPrefix = document.createElement("span");
@@ -86,11 +97,14 @@ function setSlider (name, mn, mx, mnStr, mxStr, startVal, postfix="", parent = d
 	td1.appendChild(valueElPrefix);
 	td1.appendChild(valueEl);
 	tr.appendChild(td1);
-	var td2 = document.createElement("td");
+	var td2 = document.createElement("div");
+	td2.setAttribute("class", "slider-container");
 	var minValueStr = document.createElement("span");
+	minValueStr.setAttribute("class", "slider-limit");
 	minValueStr.innerHTML = (" " + mnStr? mnStr : mn);
 	var maxValueStr = document.createElement("span");
 	maxValueStr.innerHTML = (mxStr? mxStr : mx + " ");
+	maxValueStr.setAttribute("class", "slider-limit");
 	td2.appendChild(minValueStr);
 	td2.appendChild(res);
 	td2.appendChild(maxValueStr);

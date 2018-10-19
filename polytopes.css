@@ -1,0 +1,143 @@
+body {
+ 	background-color: #eeffcc;
+	font-family: Helvetica, sans;
+	font-size: 0.875em;
+	color: #660000;
+	
+}
+
+p.signature {
+	font-style: italic;
+}
+canvas {
+	background-color: #000000;	
+	width: 100%;
+	height: 100%;
+	
+}
+
+
+.direct-canvas-container {
+	border: 2px solid #cc3300;
+	height: 0;
+	overflow: hidden;
+	padding-top: 80%;
+	position: relative;
+}
+
+.direct-canvas-container > canvas {
+position: absolute;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+}
+
+
+.canvasblock {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	 flex-direction: column;
+}
+
+.canvasblock > h3 {
+text-align: center;
+}
+.rgroup {
+	
+	grid-area: rb;
+}
+.controlblock {
+	grid-area: sliders;
+}
+.view-head {
+ grid-area: head;
+
+}
+#poly3dblock{
+ grid-area: main;
+}
+ #proj4dblock{
+ grid-area: main;
+}
+#proj3dblock { grid-area: section }
+#stereo3dblock #stereo4dblock {grid-area: stereo}
+
+
+
+canvas.canvas2d {
+	background-color: #eeeeee;
+}
+canvas.canvas3d {
+	background-color: #666666;
+}
+label.radiolabel {
+}
+
+/*radiobutton + label */
+.rb-item {
+	display: inline;
+}
+
+.rbgroup {
+}
+
+/*slider, min and max values */
+.slider-container {
+	display: flex;
+	 align-items: center;
+	order: 1;
+	padding-left: 5px;
+}
+
+/*slider current value and slider-container*/
+.slider-block {
+	display: flex;
+	justify-content: flex-start;
+  	align-items: center;
+}
+
+/*slider current value*/
+.slider-value {
+	display: inline;
+	padding-left: 5px;
+	order: 2;
+	align-self: flex-end;
+}
+
+/*group of sliders*/
+.sliders-block {
+	display: inline-grid;
+	
+}
+
+span.vector-input {
+}
+
+input.vector-input-field {
+}
+
+.view {
+	/*width: 100%;*/
+	display: grid;
+	/*grid-gap: 5px 20px;*/
+	justify-content: space-around;
+}
+
+#view3d {
+	grid-template-columns: 32% 32% 32%;
+	grid-template-areas: 'head head head' 
+			     'main section stereo' 
+                 'rb rb rb' 'sliders sliders sliders' 
+			
+}
+#view4d {
+	 grid-template-columns: 48% 48%;
+
+	grid-template-areas: 'head head' 'main stereo' 'rb rb' 'sliders sliders'
+			
+}
+
+
+

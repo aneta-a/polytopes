@@ -4,11 +4,12 @@
 
 var canvas2D, context2D;
 var stereoCanvas2D, steroContext2D;
+var canvas3d, canvas4d, canvas4dstereo;
 var ctx3d, ctx4d, ctx4dstereo;
 var dirVector;
 var poly3, poly3sec, poly4;
 var pts3d;
-
+//TODO CSS
 var canvasScale2D = 0.32;
 var canvasScale3D = 0.32;
 var canvasScale4D = 0.48;
@@ -102,39 +103,39 @@ var clearContext = function (ctx) {
 	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
-var initCanvas2D = function(size = {w: window.innerWidth*canvasScale2D, h: window.innerWidth*canvasScale2D}) {
+//TODO CSS size
+var initCanvas2D = function(parent = document.body) {
 	canvas2D = document.createElement("canvas");
-	canvas2D.setAttribute("width", size.w); 
-	canvas2D.setAttribute("height", size.h); 
-	canvas2D.setAttribute("border", 1); 
+	var block = createCanvasBlock(canvas2D, strings.Proj3d, parent);
+	
 	context2D = canvas2D.getContext("2d");
 	clearCanvas2D();
-	return createCanvasBlock(canvas2D, "Section and projection");
+	return block;
 
 }
-var initStereoCanvas2D = function(size = {w: window.innerWidth*canvasScale2D, h: window.innerWidth*canvasScale2D}) {
+
+var initStereoCanvas2D = function(parent = document.body) {
 	stereoCanvas2D = document.createElement("canvas");
-	stereoCanvas2D.setAttribute("width", size.w); 
-	stereoCanvas2D.setAttribute("height", size.h); 
-	stereoCanvas2D.setAttribute("border", 1); 
+	var block = createCanvasBlock(stereoCanvas2D, strings.Stereo3d, parent);
+	
 	stereoContext2D = stereoCanvas2D.getContext("2d");
 	clearContext(stereoContext2D);
-	return createCanvasBlock(stereoCanvas2D, "Stereographic projection");
+	return block;
 	
 
 }
 
 //-------------------------------3D------------------------------------------------------------
 
-var createThreeContext = function (parent = document.body, size= {w: window.innerWidth*canvasScale3D, h: window.innerWidth*canvasScale3D}) {
-	var renderer = new THREE.WebGLRenderer( {antialias:true, alpha:true} );
+var createThreeContext = function (canvas) {
+	var renderer = new THREE.WebGLRenderer( {canvas: canvas, antialias:true, alpha:true} );
   	renderer.setClearColor(rendererBkgColor);
-	renderer.setSize (size.w, size.h);
-	parent.appendChild (renderer.domElement);
+  	resizeCanvas({renderer: renderer});
+	
 
 	var scene = new THREE.Scene();
 
- 	var camera = new THREE.PerspectiveCamera (45, size.w/size.h, 1, 10000);
+ 	var camera = new THREE.PerspectiveCamera (45, canvas.width/canvas.height, 1, 10000);
 	camera.position.y = 30;
 	camera.position.z = 10;
 	camera.lookAt (new THREE.Vector3(0,0,0));
@@ -159,9 +160,23 @@ var updateThreeContext = function (ctxObj) {
 	ctxObj.renderer.render(ctxObj.scene, ctxObj.camera);
 }
 
-var initCanvas3D = function () {
+var resizeCanvas = function (element) {
+	var isContext = element.hasOwnProperty("renderer");
+	var canvas = isContext ? element.renderer.domElement : element;
+	var style = window.getComputedStyle(canvas);
+	var w = parseInt(style.width);
+	var h = parseInt(style.height);
+	if (isContext) {
+		element.renderer.setSize(w, h, false);
+	} else {
+		canvas.width = w;
+		canvas.height = h;
+	}
+}
+
+var initCanvas3D = function (parent = document.body) {
 	
-	ctx3d = createThreeContext();
+	ctx3d = createThreeContext(canvas3d);
 	poly3 = new PolyGroup(ctx3d.scene, curPoly, {meshMaterialData: {color: faceColor}, lineMaterialData: {color: edgeColor}, sticksMaterialData: {color: projColor4d}}, {faces: true, sticks: false, vertices: false});
 	poly3sec = new PolyGroup(ctx3d.scene, 
 							curPoly.getSection3D(Utils.dirIdentical3, 0), 
@@ -171,7 +186,14 @@ var initCanvas3D = function () {
 	pts3d = new InteractivePoints(ctx3d);
 	InteractivePoints.setClickManager(ctx3d, pts3d, [poly3]);
 	ctx3d.renderer.domElement.addEventListener("pointschange", onPointsChange3d);
-	return createCanvasBlock(ctx3d, "Polyhedron");
+	
+	resizeCanvas(canvas2D);
+	context2D = canvas2D.getContext("2d");
+	clearCanvas2D();
+	
+	resizeCanvas(stereoCanvas2D);
+	stereoContext2D = stereoCanvas2D.getContext("2d");
+	clearContext(stereoContext2D);
 
 }
 
@@ -189,11 +211,8 @@ var onPointsChange3d = function (ev) {
 }
 var onPointsChange4d = function (ev) {
 	if (Array.isArray(ev.detail) && ev.detail.length >=4) {
-		var planeObj = ctx4d.moveSmooth ? new HyperPlane(ev.detail, curSectionHP4d.normal) : new HyperPlane(ev.detail);//Utils.pointsToPlane(ev.detail);
+		var planeObj = ctx4d.moveSmooth ? new HyperPlane(ev.detail, curSectionHP4d.normal) : new HyperPlane(ev.detail);
 		if (!planeObj.error) {
-			//setSlidersValue(planeObj.dir, sliderPhi4d, sliderTheta4d, sliderChi4d)
-			//sliderH4d.value = planeObj.h;
-			//sliderH4d.updateValueOutput();
 			updateDirection4d(planeObj);
 
 		}
@@ -202,7 +221,8 @@ var onPointsChange4d = function (ev) {
 
 
 
-var initCanvas4D = function () {
+var initCanvas4D = function (parent) {
+//TODO CSS colors, size
 
 /*
 var stereoColor4d = 0x6699cc; 
@@ -213,8 +233,9 @@ var rendererBkgColor4d = 0x666666;
 var rendererBkgColorStereo4d = 0x666666;
 
 */
-	ctx4d = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
-	ctx4dstereo = createThreeContext(document.body, {w: window.innerWidth*0.45, h: window.innerWidth*0.45});
+	
+	ctx4d = createThreeContext(canvas4d);
+	ctx4dstereo = createThreeContext(canvas4dstereo);
 	
 	poly4 =       new PolyGroup(ctx4d.scene, 
 					  		    cur4Poly.getSection(curDir4d, 0.1), 
